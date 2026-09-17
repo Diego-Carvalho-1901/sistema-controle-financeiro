@@ -1,0 +1,45 @@
+data,valor,tipo,categoria,descricao
+01/09/2026,1800.00,receita,salario,Salario mensal
+02/09/2026,45.90,despesa,alimentacao,Almoco
+03/09/2026,120.00,despesa,lazer,Cinema e alimentacao
+04/09/2026,200.00,despesa,transporte,Combustivel
+05/09/2026,350.00,receita,freelance,Servico de desenvolvimento
+06/09/2026,89.90,despesa,assinaturas,Internet
+07/09/2026,75.50,despesa,alimentacao,Supermercado
+08/09/2026,150.00,despesa,educacao,Curso online
+09/09/2026,300.00,receita,freelance,Projeto de programacao
+10/09/2026,60.00,despesa,lazer,Saida com amigos
+11/09/2026,110.00,despesa,transporte,Manutencao do carro
+12/09/2026,250.00,despesa,alimentacao,Compras do mes
+13/09/2026,500.00,receita,outros,Venda de equipamento usado
+14/09/2026,35.00,despesa,saude,Farmacia
+15/09/2026,100.00,despesa,educacao,Livros
+16/08/2026,1800.00,receita,salario,Salario mensal
+18/08/2026,320.00,despesa,alimentacao,Compras do supermercado
+20/08/2026,150.00,despesa,transporte,Combustivel
+22/08/2026,250.00,receita,freelance,Servico de programacao
+25/08/2026,89.90,despesa,assinaturas,Internet
+28/08/2026,120.00,despesa,lazer,Restaurante
+05/08/2026,300.00,receita,freelance,Servico de programacao
+10/08/2026,85.50,despesa,alimentacao,Supermercado
+17/08/2026,120.00,despesa,transporte,Combustivel
+26/08/2026,200.00,despesa,lazer,Restaurante
+02/10/2026,1800.00,receita,salario,Salario mensal
+05/10/2026,200.00,despesa,alimentacao,Supermercado
+08/10/2026,180.00,despesa,transporte,Combustivel
+12/10/2026,400.00,receita,freelance,Projeto de programacao
+15/10/2026,90.00,despesa,assinaturas,Internet
+20/10/2026,150.00,despesa,lazer,Cinema e jantar
+04/10/2026,500.00,receita,freelance,Projeto de programacao
+09/10/2026,75.90,despesa,alimentacao,Supermercado
+18/10/2026,150.00,despesa,transporte,Combustivel
+27/10/2026,100.00,despesa,educacao,Livro tecnico
+07/11/2026,350.00,despesa,educacao,Curso online
+15/11/2026,220.00,despesa,alimentacao,Compras do mes
+03/11/2026,1800.00,receita,salario,Salario mensal
+06/11/2026,350.00,receita,freelance,Servico de desenvolvimento
+08/11/2026,95.00,despesa,alimentacao,Supermercado
+12/11/2026,180.00,despesa,transporte,Combustivel
+16/11/2026,120.00,despesa,lazer,Cinema
+20/11/2026,200.00,despesa,educacao,Curso online
+25/11/2026,89.90,despesa,assinaturas,Internet
