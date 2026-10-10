@@ -13,9 +13,11 @@ import csv # importa a biblioteca CSV para manipulação de arquivos CSV
 import sys
 
 from analise import (
+    ErroLeitura,
     calcular_media,
     calcular_percentual,
     encontrar_maior_e_menor,
+    ler_movimentacoes,
     nome_do_mes,
     somar_por_mes,
 )
@@ -28,15 +30,12 @@ except FileNotFoundError:
     sys.exit()
 
 leitor = csv.reader(arquivo) # permite a leitura do arquivo CSV
-from datetime import datetime # importa a biblioteca datetime para manipulação de datas
 
 
 ##################################################################
 ########## Definição de variáveis e estruturas de dados ##########
 ##################################################################
 
-next (leitor) # pula a primeira linha do arquivo CSV (cabeçalho)
-movimentacoes = [] # inicializa uma lista para armazenar as movimentações
 receita = 0 # inicializa a variável receita com valor 0
 despesa = 0 # inicializa a variável despesa com valor 0
 saldo = 0 # inicializa a variável saldo com valor 0
@@ -60,10 +59,6 @@ valores_mes = {} # inicializa um dicionário para armazenar os valores de cada m
 ##########################################
 ########## Definição de funções ##########
 ##########################################
-
-def armazenar_movimentacao(movimentacoes, data, valor, tipo, categoria, descricao):
-    movimentacoes.append([data, valor, tipo, categoria, descricao])
-#L> função responsável por colocar uma movimentação na lista.
 
    
 def processar_movimentacao(receita, despesa, tipo, valor, categoria, receitas_categorias, despesas_categorias):
@@ -103,21 +98,14 @@ def analisar_concentracao(percentual_categorias, limite_percentual):
 ######################################################
 
 
-for linha in leitor: # percorre cada linha do arquivo CSV
-    data, valor, tipo, categoria, descricao = linha
-    try:
-        data = datetime.strptime(data, "%d/%m/%Y") # converte a string da data para um objeto datetime
-    except ValueError:
-        print("\nErro: A data inserida e invalida. Verifique e tente novamente\n")
-        sys.exit()
+try:
+    movimentacoes = ler_movimentacoes(leitor)
+except ErroLeitura as erro:
+    print(f"\nErro: {erro}\n")
+    sys.exit(1)
 
-    try:
-        armazenar_movimentacao(movimentacoes, data, float(valor), tipo, categoria, descricao)
-    except ValueError:
-        print("\nErro: O valor inserido é inválido. Por gentileza, verifique os valores inseridos!!\n")
-        sys.exit()
-
-    receita, despesa = processar_movimentacao(receita, despesa, tipo, float(valor), categoria, receitas_categorias, despesas_categorias)
+for data, valor, tipo, categoria, descricao in movimentacoes:
+    receita, despesa = processar_movimentacao(receita, despesa, tipo, valor, categoria, receitas_categorias, despesas_categorias)
     # L> armazena a movimentação e atualiza as variáveis receita e despesa
 
 valores_receitas_mes = somar_por_mes(movimentacoes, "receita")

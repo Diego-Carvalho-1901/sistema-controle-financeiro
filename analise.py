@@ -4,6 +4,11 @@ Ficam separadas de main.py para poderem ser importadas e testadas sem
 executar o relatório inteiro.
 """
 
+from collections.abc import Iterable
+from datetime import datetime
+
+COLUNAS = ("data", "valor", "tipo", "categoria", "descricao")
+
 NOMES_MESES = (
     "janeiro",
     "fevereiro",
@@ -72,3 +77,54 @@ def somar_por_mes(movimentacoes: list[list], tipo: str) -> dict[tuple[int, int],
         chave = (data.year, data.month)
         totais[chave] = totais.get(chave, 0) + valor
     return totais
+
+
+class ErroLeitura(Exception):
+    """Problema no CSV, com uma mensagem pronta para mostrar ao usuário."""
+
+
+def ler_movimentacoes(linhas: Iterable[list[str]]) -> list[list]:
+    """Converte as linhas do CSV (a primeira é o cabeçalho) em movimentações.
+
+    Cada movimentação vira [data (datetime), valor (float), tipo, categoria,
+    descricao]. Linhas em branco são ignoradas.
+
+    Lança ErroLeitura, indicando o número da linha no arquivo, quando o CSV
+    está vazio, quando uma linha não tem 5 colunas ou quando a data ou o
+    valor são inválidos.
+    """
+    linhas = iter(linhas)
+    if next(linhas, None) is None:
+        raise ErroLeitura("O arquivo CSV está vazio.")
+
+    movimentacoes = []
+    # O cabeçalho é a linha 1, então os dados começam na linha 2.
+    for numero_linha, linha in enumerate(linhas, start=2):
+        if not linha:
+            continue
+        if len(linha) != len(COLUNAS):
+            raise ErroLeitura(
+                f"Linha {numero_linha}: esperadas {len(COLUNAS)} colunas "
+                f"({', '.join(COLUNAS)}), mas foram encontradas {len(linha)}."
+            )
+
+        data_texto, valor_texto, tipo, categoria, descricao = linha
+        try:
+            data = datetime.strptime(data_texto, "%d/%m/%Y")
+        except ValueError:
+            raise ErroLeitura(
+                f"Linha {numero_linha}: data inválida '{data_texto}'. "
+                "Use o formato DD/MM/AAAA."
+            ) from None
+        try:
+            valor = float(valor_texto)
+        except ValueError:
+            raise ErroLeitura(
+                f"Linha {numero_linha}: valor inválido '{valor_texto}'."
+            ) from None
+
+        movimentacoes.append([data, valor, tipo, categoria, descricao])
+
+    if not movimentacoes:
+        raise ErroLeitura("O arquivo CSV não contém nenhuma movimentação.")
+    return movimentacoes
