@@ -56,3 +56,19 @@ def nome_do_mes(mes: int) -> str:
     no sistema e por isso mostrava "September" em vez de "setembro".
     """
     return NOMES_MESES[mes - 1]
+
+
+def somar_por_mes(movimentacoes: list[list], tipo: str) -> dict[tuple[int, int], float]:
+    """Soma os valores de um tipo ("receita" ou "despesa") em cada mês.
+
+    A chave é a tupla (ano, mês), para que janeiro/2026 e janeiro/2027
+    fiquem separados. Tuplas são ordenadas elemento a elemento, então
+    sorted() nas chaves já devolve os meses em ordem cronológica.
+    """
+    totais: dict[tuple[int, int], float] = {}
+    for data, valor, tipo_movimentacao, _categoria, _descricao in movimentacoes:
+        if tipo_movimentacao != tipo:
+            continue
+        chave = (data.year, data.month)
+        totais[chave] = totais.get(chave, 0) + valor
+    return totais

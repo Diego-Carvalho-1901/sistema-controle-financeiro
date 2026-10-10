@@ -7,6 +7,7 @@ from analise import (
     calcular_percentual,
     encontrar_maior_e_menor,
     nome_do_mes,
+    somar_por_mes,
 )
 
 # --- Bug: divisão por zero sem receitas ou sem despesas ---
@@ -53,3 +54,31 @@ def test_nome_do_mes_em_portugues():
     assert nome_do_mes(3) == "março"
     assert nome_do_mes(9) == "setembro"
     assert nome_do_mes(12) == "dezembro"
+
+
+# --- Bug: meses de anos diferentes somados juntos ---
+
+
+def test_somar_por_mes_separa_anos_diferentes():
+    movimentacoes = [
+        [datetime(2026, 1, 5), 1000.0, "receita", "salario", "Jan 2026"],
+        [datetime(2027, 1, 5), 1200.0, "receita", "salario", "Jan 2027"],
+        [datetime(2026, 1, 20), 300.0, "receita", "freelance", "Extra"],
+        [datetime(2026, 1, 10), 50.0, "despesa", "lazer", "Cinema"],
+    ]
+
+    receitas = somar_por_mes(movimentacoes, "receita")
+
+    assert receitas == {(2026, 1): 1300.0, (2027, 1): 1200.0}
+
+
+def test_somar_por_mes_ordena_cronologicamente():
+    movimentacoes = [
+        [datetime(2027, 1, 5), 10.0, "despesa", "lazer", "a"],
+        [datetime(2026, 12, 5), 20.0, "despesa", "lazer", "b"],
+        [datetime(2026, 2, 5), 30.0, "despesa", "lazer", "c"],
+    ]
+
+    meses = sorted(somar_por_mes(movimentacoes, "despesa"))
+
+    assert meses == [(2026, 2), (2026, 12), (2027, 1)]

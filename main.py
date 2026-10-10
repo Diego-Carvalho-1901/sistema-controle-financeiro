@@ -12,7 +12,13 @@
 import csv # importa a biblioteca CSV para manipulação de arquivos CSV
 import sys
 
-from analise import calcular_media, calcular_percentual, encontrar_maior_e_menor, nome_do_mes
+from analise import (
+    calcular_media,
+    calcular_percentual,
+    encontrar_maior_e_menor,
+    nome_do_mes,
+    somar_por_mes,
+)
 
 try:
     arquivo = open('dados/movimentacoes.csv')
@@ -48,8 +54,6 @@ percentuais_categorias = {} # inicializa um dicionário para armazenar os percen
 percentuais_receitas = {} # inicializa um dicionário para armazenar os percentuais de cada categoria de receitas
 
 valores_mes = {} # inicializa um dicionário para armazenar os valores de cada mês
-valores_receitas_mes = {} # inicializa um dicionário para armazenar os valores de cada mês de receitas
-valores_despesas_mes = {} # inicializa um dicionário para armazenar os valores de cada mês de despesas
 
 
 
@@ -116,20 +120,8 @@ for linha in leitor: # percorre cada linha do arquivo CSV
     receita, despesa = processar_movimentacao(receita, despesa, tipo, float(valor), categoria, receitas_categorias, despesas_categorias)
     # L> armazena a movimentação e atualiza as variáveis receita e despesa
 
-    mes = data.month
-
-
-    if tipo == "receita":
-        if mes in valores_receitas_mes:
-            valores_receitas_mes[mes] = valores_receitas_mes[mes] + float(valor)
-        else:
-            valores_receitas_mes[mes] = float(valor)
-
-    elif tipo == "despesa":
-        if mes in valores_despesas_mes:
-            valores_despesas_mes[mes] = valores_despesas_mes[mes] + float(valor)
-        else:
-            valores_despesas_mes[mes] = float(valor)
+valores_receitas_mes = somar_por_mes(movimentacoes, "receita")
+valores_despesas_mes = somar_por_mes(movimentacoes, "despesa")
 
 
 
@@ -192,11 +184,11 @@ print ('================== ANALISE MENSAL ==================')
 print ('====================================================\n')
 meses = set(valores_receitas_mes.keys()) | set(valores_despesas_mes.keys())
 meses_ordenados = sorted (meses)
-for mes in meses_ordenados:
-    nome_mes = nome_do_mes(mes)
+for ano, mes in meses_ordenados:
+    nome_mes = f"{nome_do_mes(mes)}/{ano}"
 
-    receita_mes = valores_receitas_mes.get(mes, 0)
-    despesa_mes = valores_despesas_mes.get(mes, 0)
+    receita_mes = valores_receitas_mes.get((ano, mes), 0)
+    despesa_mes = valores_despesas_mes.get((ano, mes), 0)
 
     saldo_mes = receita_mes - despesa_mes
 
