@@ -12,6 +12,16 @@
 import csv # importa a biblioteca CSV para manipulação de arquivos CSV
 import sys
 
+from analise import (
+    ErroLeitura,
+    calcular_media,
+    calcular_percentual,
+    encontrar_maior_e_menor,
+    ler_movimentacoes,
+    nome_do_mes,
+    somar_por_mes,
+)
+
 try:
     arquivo = open('dados/movimentacoes.csv')
     # L> abre o arquivo CSV com os dados de movimentações
@@ -20,15 +30,12 @@ except FileNotFoundError:
     sys.exit()
 
 leitor = csv.reader(arquivo) # permite a leitura do arquivo CSV
-from datetime import datetime # importa a biblioteca datetime para manipulação de datas
 
 
 ##################################################################
 ########## Definição de variáveis e estruturas de dados ##########
 ##################################################################
 
-next (leitor) # pula a primeira linha do arquivo CSV (cabeçalho)
-movimentacoes = [] # inicializa uma lista para armazenar as movimentações
 receita = 0 # inicializa a variável receita com valor 0
 despesa = 0 # inicializa a variável despesa com valor 0
 saldo = 0 # inicializa a variável saldo com valor 0
@@ -46,18 +53,12 @@ percentuais_categorias = {} # inicializa um dicionário para armazenar os percen
 percentuais_receitas = {} # inicializa um dicionário para armazenar os percentuais de cada categoria de receitas
 
 valores_mes = {} # inicializa um dicionário para armazenar os valores de cada mês
-valores_receitas_mes = {} # inicializa um dicionário para armazenar os valores de cada mês de receitas
-valores_despesas_mes = {} # inicializa um dicionário para armazenar os valores de cada mês de despesas
 
 
 
 ##########################################
 ########## Definição de funções ##########
 ##########################################
-
-def armazenar_movimentacao(movimentacoes, data, valor, tipo, categoria, descricao):
-    movimentacoes.append([data, valor, tipo, categoria, descricao])
-#L> função responsável por colocar uma movimentação na lista.
 
    
 def processar_movimentacao(receita, despesa, tipo, valor, categoria, receitas_categorias, despesas_categorias):
@@ -86,16 +87,6 @@ def atualizar_movimentacao(valor, categoria, total, categorias): # declaração 
 
 
 
-def calcular_percentual(parte, todo): # função generica que calcula o percentual de uma parte em relação ao todo
-    porcentagem = (parte / todo) * 100
-    return porcentagem
-
-
-def calcular_media(total, qtd):
-    media = total / qtd
-    return media
-
-
 limite_percentual = 20
 def analisar_concentracao(percentual_categorias, limite_percentual):
     return percentual_categorias >= limite_percentual
@@ -107,37 +98,18 @@ def analisar_concentracao(percentual_categorias, limite_percentual):
 ######################################################
 
 
-for linha in leitor: # percorre cada linha do arquivo CSV
-    data, valor, tipo, categoria, descricao = linha
-    try:
-        data = datetime.strptime(data, "%d/%m/%Y") # converte a string da data para um objeto datetime
-    except ValueError:
-        print("\nErro: A data inserida e invalida. Verifique e tente novamente\n")
-        sys.exit()
+try:
+    movimentacoes = ler_movimentacoes(leitor)
+except ErroLeitura as erro:
+    print(f"\nErro: {erro}\n")
+    sys.exit(1)
 
-    try:
-        armazenar_movimentacao(movimentacoes, data, float(valor), tipo, categoria, descricao)
-    except ValueError:
-        print("\nErro: O valor inserido é inválido. Por gentileza, verifique os valores inseridos!!\n")
-        sys.exit()
-
-    receita, despesa = processar_movimentacao(receita, despesa, tipo, float(valor), categoria, receitas_categorias, despesas_categorias)
+for data, valor, tipo, categoria, descricao in movimentacoes:
+    receita, despesa = processar_movimentacao(receita, despesa, tipo, valor, categoria, receitas_categorias, despesas_categorias)
     # L> armazena a movimentação e atualiza as variáveis receita e despesa
 
-    mes = data.month
-
-
-    if tipo == "receita":
-        if mes in valores_receitas_mes:
-            valores_receitas_mes[mes] = valores_receitas_mes[mes] + float(valor)
-        else:
-            valores_receitas_mes[mes] = float(valor)
-
-    elif tipo == "despesa":
-        if mes in valores_despesas_mes:
-            valores_despesas_mes[mes] = valores_despesas_mes[mes] + float(valor)
-        else:
-            valores_despesas_mes[mes] = float(valor)
+valores_receitas_mes = somar_por_mes(movimentacoes, "receita")
+valores_despesas_mes = somar_por_mes(movimentacoes, "despesa")
 
 
 
@@ -164,21 +136,7 @@ def maior_categoria(categorias): # função retorna a categoria com maior valor 
 saldo = receita - despesa # calculo do saldo
 
 
-maior_movimentacao = 0
-armaz_maior_movimentacao = []
-menor_movimentacao = movimentacoes[0][1]
-armaz_menor_movimentacao = []
-
-for movimentacao in movimentacoes:
-    data, valor, tipo, categoria, descricao = movimentacao
-
-    if valor > maior_movimentacao:
-        maior_movimentacao = valor
-        armaz_maior_movimentacao = movimentacao
-
-    if valor < menor_movimentacao:
-        menor_movimentacao = valor
-        armaz_menor_movimentacao = movimentacao
+armaz_maior_movimentacao, armaz_menor_movimentacao = encontrar_maior_e_menor(movimentacoes)
 
 
 qtd_receitas = 0
@@ -214,16 +172,11 @@ print ('================== ANALISE MENSAL ==================')
 print ('====================================================\n')
 meses = set(valores_receitas_mes.keys()) | set(valores_despesas_mes.keys())
 meses_ordenados = sorted (meses)
-for mes in meses_ordenados:
-    for movimentacao in movimentacoes:
-        data, valor, tipo, categoria, descricao = movimentacao
+for ano, mes in meses_ordenados:
+    nome_mes = f"{nome_do_mes(mes)}/{ano}"
 
-        if data.month == mes:
-            nome_mes = data.strftime("%B")
-            break
-
-    receita_mes = valores_receitas_mes.get(mes, 0)
-    despesa_mes = valores_despesas_mes.get(mes, 0)
+    receita_mes = valores_receitas_mes.get((ano, mes), 0)
+    despesa_mes = valores_despesas_mes.get((ano, mes), 0)
 
     saldo_mes = receita_mes - despesa_mes
 
