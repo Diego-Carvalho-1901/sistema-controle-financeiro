@@ -2,3 +2,8 @@
 # Permite que os testes façam "import analise" a partir da raiz do projeto.
 pythonpath = ["."]
 testpaths = ["tests"]
+
+[tool.ruff.lint]
+# As datas do CSV são datas locais (dia/mês/ano), sem fuso horário.
+# As regras DTZ exigem datetime com fuso, o que não se aplica aqui.
+ignore = ["DTZ"]
