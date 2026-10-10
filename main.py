@@ -12,7 +12,7 @@
 import csv # importa a biblioteca CSV para manipulação de arquivos CSV
 import sys
 
-from analise import calcular_media, calcular_percentual
+from analise import calcular_media, calcular_percentual, encontrar_maior_e_menor
 
 try:
     arquivo = open('dados/movimentacoes.csv')
@@ -156,21 +156,7 @@ def maior_categoria(categorias): # função retorna a categoria com maior valor 
 saldo = receita - despesa # calculo do saldo
 
 
-maior_movimentacao = 0
-armaz_maior_movimentacao = []
-menor_movimentacao = movimentacoes[0][1]
-armaz_menor_movimentacao = []
-
-for movimentacao in movimentacoes:
-    data, valor, tipo, categoria, descricao = movimentacao
-
-    if valor > maior_movimentacao:
-        maior_movimentacao = valor
-        armaz_maior_movimentacao = movimentacao
-
-    if valor < menor_movimentacao:
-        menor_movimentacao = valor
-        armaz_menor_movimentacao = movimentacao
+armaz_maior_movimentacao, armaz_menor_movimentacao = encontrar_maior_e_menor(movimentacoes)
 
 
 qtd_receitas = 0

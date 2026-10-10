@@ -21,3 +21,14 @@ def calcular_media(total: float, quantidade: int) -> float:
     if quantidade == 0:
         return 0.0
     return total / quantidade
+
+
+def encontrar_maior_e_menor(movimentacoes: list[list]) -> tuple[list, list]:
+    """Devolve a movimentação de maior valor e a de menor valor.
+
+    Cada movimentação é uma lista [data, valor, tipo, categoria, descricao].
+    Em caso de empate, vale a que aparece primeiro na lista.
+    """
+    maior = max(movimentacoes, key=lambda movimentacao: movimentacao[1])
+    menor = min(movimentacoes, key=lambda movimentacao: movimentacao[1])
+    return maior, menor
