@@ -4,6 +4,21 @@ Ficam separadas de main.py para poderem ser importadas e testadas sem
 executar o relatório inteiro.
 """
 
+NOMES_MESES = (
+    "janeiro",
+    "fevereiro",
+    "março",
+    "abril",
+    "maio",
+    "junho",
+    "julho",
+    "agosto",
+    "setembro",
+    "outubro",
+    "novembro",
+    "dezembro",
+)
+
 
 def calcular_percentual(parte: float, todo: float) -> float:
     """Devolve quanto `parte` representa de `todo`, em porcentagem.
@@ -32,3 +47,12 @@ def encontrar_maior_e_menor(movimentacoes: list[list]) -> tuple[list, list]:
     maior = max(movimentacoes, key=lambda movimentacao: movimentacao[1])
     menor = min(movimentacoes, key=lambda movimentacao: movimentacao[1])
     return maior, menor
+
+
+def nome_do_mes(mes: int) -> str:
+    """Devolve o nome do mês (1 a 12) em português.
+
+    Não usa strftime("%B"), que depende do idioma (locale) configurado
+    no sistema e por isso mostrava "September" em vez de "setembro".
+    """
+    return NOMES_MESES[mes - 1]

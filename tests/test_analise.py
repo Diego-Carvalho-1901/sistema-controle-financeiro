@@ -2,7 +2,12 @@
 
 from datetime import datetime
 
-from analise import calcular_media, calcular_percentual, encontrar_maior_e_menor
+from analise import (
+    calcular_media,
+    calcular_percentual,
+    encontrar_maior_e_menor,
+    nome_do_mes,
+)
 
 # --- Bug: divisão por zero sem receitas ou sem despesas ---
 
@@ -38,3 +43,13 @@ def test_menor_movimentacao_na_primeira_linha():
     assert maior[1] == 1800.0
     assert menor[1] == 10.0
     assert menor[4] == "Cafe"
+
+
+# --- Bug: nomes dos meses em inglês ---
+
+
+def test_nome_do_mes_em_portugues():
+    assert nome_do_mes(1) == "janeiro"
+    assert nome_do_mes(3) == "março"
+    assert nome_do_mes(9) == "setembro"
+    assert nome_do_mes(12) == "dezembro"

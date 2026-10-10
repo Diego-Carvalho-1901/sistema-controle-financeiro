@@ -12,7 +12,7 @@
 import csv # importa a biblioteca CSV para manipulação de arquivos CSV
 import sys
 
-from analise import calcular_media, calcular_percentual, encontrar_maior_e_menor
+from analise import calcular_media, calcular_percentual, encontrar_maior_e_menor, nome_do_mes
 
 try:
     arquivo = open('dados/movimentacoes.csv')
@@ -193,12 +193,7 @@ print ('====================================================\n')
 meses = set(valores_receitas_mes.keys()) | set(valores_despesas_mes.keys())
 meses_ordenados = sorted (meses)
 for mes in meses_ordenados:
-    for movimentacao in movimentacoes:
-        data, valor, tipo, categoria, descricao = movimentacao
-
-        if data.month == mes:
-            nome_mes = data.strftime("%B")
-            break
+    nome_mes = nome_do_mes(mes)
 
     receita_mes = valores_receitas_mes.get(mes, 0)
     despesa_mes = valores_despesas_mes.get(mes, 0)
