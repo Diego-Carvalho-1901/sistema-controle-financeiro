@@ -12,6 +12,8 @@
 import csv # importa a biblioteca CSV para manipulação de arquivos CSV
 import sys
 
+from analise import calcular_media, calcular_percentual
+
 try:
     arquivo = open('dados/movimentacoes.csv')
     # L> abre o arquivo CSV com os dados de movimentações
@@ -84,16 +86,6 @@ def atualizar_movimentacao(valor, categoria, total, categorias): # declaração 
 #L> função generica que pega os valores trazidos por processar_movimentacao e
 #   e atualiza as variáveis total e categorias com os valores das movimentações;
 
-
-
-def calcular_percentual(parte, todo): # função generica que calcula o percentual de uma parte em relação ao todo
-    porcentagem = (parte / todo) * 100
-    return porcentagem
-
-
-def calcular_media(total, qtd):
-    media = total / qtd
-    return media
 
 
 limite_percentual = 20
