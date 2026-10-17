@@ -1,5 +1,7 @@
 # Sistema de Controle Financeiro
 
+[![CI](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/actions/workflows/ci.yml/badge.svg)](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/actions/workflows/ci.yml)
+
 ## Sobre o projeto
 Este projeto consiste em um sistema de controle financeiro desenvolvido em Python, capaz de ler e processar movimentações financeiras armazenadas em um arquivo CSV. A aplicação realiza o cálculo de receitas, despesas e saldo, além de gerar análises por categoria e por período. O projeto foi desenvolvido com foco na prática de manipulação de dados, criação de funções, tratamento de erros e organização de informações financeiras.
 
@@ -33,15 +35,34 @@ sistema_controle_financeiro/
 
 ```
 ## Como executar
-```markdown
 
 1. Clone este repositório.
-2. Abra a pasta do projeto no Visual Studio Code.
-3. Certifique-se de que o arquivo `dados/movimentacoes.csv` está presente.
-4. Execute o arquivo `main.py` através do terminal:
+2. Certifique-se de que o arquivo `dados/movimentacoes.csv` está presente.
+3. Execute o `main.py` pelo terminal (opcionalmente passando outro CSV):
 
 ```bash
+python main.py
+python main.py caminho/para/outro.csv
 ```
+
+## Como rodar os testes
+
+Os testes usam [pytest](https://docs.pytest.org/) e o linter é o [ruff](https://docs.astral.sh/ruff/).
+Recomenda-se um ambiente virtual:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate        # no Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt
+
+pytest                # roda todos os testes da pasta tests/
+ruff check .          # procura erros e más práticas no código
+ruff format --check . # confere a formatação (use "ruff format ." para corrigir)
+```
+
+Os mesmos comandos rodam automaticamente no GitHub Actions a cada push na `main`
+e em todo pull request (arquivo `.github/workflows/ci.yml`). O selo no topo deste
+README mostra se a última execução passou.
 
 ## Exemplo de execução
 ```text
