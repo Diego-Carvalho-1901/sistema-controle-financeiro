@@ -1,0 +1,4 @@
+# Dependências para rodar o app.
+# Hoje o projeto usa só a biblioteca padrão do Python (csv, decimal, datetime,
+# argparse), então não há pacotes externos. Novas dependências entram aqui
+# (ex.: SQLAlchemy na issue [07], FastAPI na [09]).
