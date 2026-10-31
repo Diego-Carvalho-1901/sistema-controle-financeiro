@@ -101,6 +101,8 @@ def gerar_relatorio(lancamentos: list[Lancamento]) -> str:
             f"| Percentual: {percentual: 10.2f} %"
         )
 
+    linhas += _secao_negocio_e_pessoal(lancamentos)
+
     linhas.append("\n" + "=" * 52 + "\n")
     return "\n".join(linhas)
 
@@ -189,3 +191,16 @@ def _secao_concentracao(percentuais: dict[str, Decimal]) -> list[str]:
 
 def _listar_categorias(totais: dict[str, Decimal]) -> list[str]:
     return [f"= > {categoria} : R$ {valor:.2f}" for categoria, valor in totais.items()]
+
+
+def _secao_negocio_e_pessoal(lancamentos: list[Lancamento]) -> list[str]:
+    """Lucro do negócio e saldo pessoal, cada um com o seu dinheiro."""
+    negocio = calculos.resumir_negocio(lancamentos)
+    saldo_pessoal = calculos.calcular_saldo_pessoal(lancamentos)
+    return [
+        *_cabecalho("================ NEGÓCIO x PESSOAL ================="),
+        f"Faturamento do negócio: R$ {negocio.faturamento:.2f}",
+        f"Custos do negócio: R$ {negocio.custos:.2f}",
+        f"Lucro do negócio: R$ {negocio.lucro:.2f} (margem de {negocio.margem:.2f} %)",
+        f"Saldo pessoal: R$ {saldo_pessoal:.2f}",
+    ]
