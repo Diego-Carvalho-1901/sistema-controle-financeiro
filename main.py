@@ -5,6 +5,7 @@ Autor: Diego Carvalho Louzada Viveiros
 Uso:
     python main.py                      # usa dados/movimentacoes.csv
     python main.py caminho/para/arquivo.csv
+    python main.py dados/movimentacoes.csv dados/vendas.csv dados/negocio.csv
 """
 
 import argparse
@@ -25,12 +26,14 @@ def criar_parser() -> argparse.ArgumentParser:
         description="Gera um relatório financeiro a partir de um CSV de movimentações."
     )
     parser.add_argument(
-        "csv",
-        nargs="?",
+        "csvs",
+        nargs="*",
         type=Path,
-        default=CSV_PADRAO,
-        help="arquivo CSV com as colunas data,valor,tipo,categoria,descricao "
-        "(padrão: dados/movimentacoes.csv)",
+        default=[CSV_PADRAO],
+        metavar="csv",
+        help="um ou mais CSVs de movimentações (data,valor,tipo,categoria,"
+        "descricao[,conta]) ou de vendas do analisador; os lançamentos de "
+        "todos entram no mesmo relatório (padrão: dados/movimentacoes.csv)",
     )
     return parser
 
@@ -38,17 +41,19 @@ def criar_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     """Lê o CSV, imprime o relatório e devolve o código de saída do programa."""
     argumentos = criar_parser().parse_args(argv)
-    try:
-        lancamentos = carregar_csv(argumentos.csv)
-    except FileNotFoundError:
-        print(
-            f"\nErro: O arquivo {argumentos.csv} não foi encontrado!!\n",
-            file=sys.stderr,
-        )
-        return 1
-    except ErroLeitura as erro:
-        print(f"\nErro: {erro}\n", file=sys.stderr)
-        return 1
+    lancamentos = []
+    for caminho in argumentos.csvs:
+        try:
+            lancamentos += carregar_csv(caminho)
+        except FileNotFoundError:
+            print(
+                f"\nErro: O arquivo {caminho} não foi encontrado!!\n",
+                file=sys.stderr,
+            )
+            return 1
+        except ErroLeitura as erro:
+            print(f"\nErro em {caminho.name}: {erro}\n", file=sys.stderr)
+            return 1
 
     print(gerar_relatorio(lancamentos))
     return 0

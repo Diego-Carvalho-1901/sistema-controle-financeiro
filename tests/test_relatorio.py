@@ -37,3 +37,28 @@ def test_relatorio_mostra_totais_com_duas_casas():
 
     assert "Total de Despesas: R$ 0.30" in relatorio
     assert "Saldo: R$ 999.70" in relatorio
+
+
+def test_relatorio_separa_negocio_e_pessoal():
+    lancamentos = [
+        Lancamento(
+            date(2026, 9, 5),
+            Decimal(180),
+            "venda",
+            "bolos",
+            "Bolo",
+            "negocio",
+            "Bolo",
+            4,
+        ),
+        Lancamento(date(2026, 9, 6), Decimal(80), "despesa", "insumos", "x", "negocio"),
+        Lancamento(date(2026, 9, 1), Decimal(1000), "receita", "salario", "y"),
+        Lancamento(date(2026, 9, 2), Decimal(300), "despesa", "aluguel", "z"),
+    ]
+
+    relatorio = gerar_relatorio(lancamentos)
+
+    assert "Faturamento do negócio: R$ 180.00" in relatorio
+    assert "Custos do negócio: R$ 80.00" in relatorio
+    assert "Lucro do negócio: R$ 100.00 (margem de 55.56 %)" in relatorio
+    assert "Saldo pessoal: R$ 700.00" in relatorio

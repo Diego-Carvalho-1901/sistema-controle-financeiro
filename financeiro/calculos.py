@@ -5,6 +5,7 @@ imprimem nada nem leem arquivos. Por isso podem ser testadas isoladamente.
 """
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 from decimal import Decimal
 
 from financeiro.modelos import Lancamento
@@ -106,3 +107,54 @@ def tem_alta_concentracao(
 ) -> bool:
     """Diz se uma categoria concentra `limite`% ou mais das despesas."""
     return percentual >= limite
+
+
+# --- Negócio x pessoal (issue [05]) ---
+
+
+@dataclass(frozen=True)
+class ResumoNegocio:
+    """Quanto o negócio faturou, quanto gastou e quanto sobrou."""
+
+    faturamento: Decimal
+    custos: Decimal
+
+    @property
+    def lucro(self) -> Decimal:
+        """Faturamento menos custos (negativo quando há prejuízo)."""
+        return self.faturamento - self.custos
+
+    @property
+    def margem(self) -> Decimal:
+        """Lucro como porcentagem do faturamento (0 se não faturou nada)."""
+        return calcular_percentual(self.lucro, self.faturamento)
+
+
+def filtrar_por_conta(
+    lancamentos: Iterable[Lancamento], conta: str
+) -> list[Lancamento]:
+    """Devolve só os lançamentos da `conta` pedida ("negocio" ou "pessoal")."""
+    return [lancamento for lancamento in lancamentos if lancamento.conta == conta]
+
+
+def resumir_negocio(lancamentos: Iterable[Lancamento]) -> ResumoNegocio:
+    """Calcula faturamento, custos e lucro só com a conta do negócio.
+
+    Faturamento são as vendas mais as outras receitas do negócio (por
+    exemplo, um serviço avulso). Custos são as despesas do negócio.
+    Nada da conta pessoal entra nessa conta.
+    """
+    negocio = filtrar_por_conta(lancamentos, "negocio")
+    entradas = filtrar_por_tipo(negocio, "venda") + filtrar_por_tipo(negocio, "receita")
+    return ResumoNegocio(
+        faturamento=somar(entradas),
+        custos=somar(filtrar_por_tipo(negocio, "despesa")),
+    )
+
+
+def calcular_saldo_pessoal(lancamentos: Iterable[Lancamento]) -> Decimal:
+    """Receitas menos despesas da conta pessoal, sem nada do negócio."""
+    pessoal = filtrar_por_conta(lancamentos, "pessoal")
+    return somar(filtrar_por_tipo(pessoal, "receita")) - somar(
+        filtrar_por_tipo(pessoal, "despesa")
+    )
