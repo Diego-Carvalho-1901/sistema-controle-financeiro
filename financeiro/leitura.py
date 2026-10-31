@@ -6,9 +6,11 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
-from financeiro.modelos import TIPOS, Lancamento
+from financeiro.modelos import Lancamento
 
 COLUNAS = ("data", "valor", "tipo", "categoria", "descricao")
+# Vendas têm produto e quantidade, então chegam pelo CSV de vendas.
+TIPOS_MOVIMENTACAO = ("receita", "despesa")
 
 
 class ErroLeitura(Exception):
@@ -76,9 +78,9 @@ def _converter_linha(linha: list[str], numero_linha: int) -> Lancamento:
     if valor is None or not valor.is_finite():
         raise ErroLeitura(f"Linha {numero_linha}: valor inválido '{valor_texto}'.")
 
-    if tipo not in TIPOS:
+    if tipo not in TIPOS_MOVIMENTACAO:
         raise ErroLeitura(
-            f"Linha {numero_linha}: tipo inválido '{tipo}'. Use {' ou '.join(TIPOS)}."
+            f"Linha {numero_linha}: tipo inválido '{tipo}'. Use {' ou '.join(TIPOS_MOVIMENTACAO)}."
         )
 
     return Lancamento(data, valor, tipo, categoria, descricao)
