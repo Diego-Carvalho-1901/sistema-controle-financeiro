@@ -1,0 +1,5 @@
+data,valor,tipo,categoria,descricao,conta
+06/09/2026,180.00,despesa,insumos,Farinha acucar e ovos,negocio
+13/09/2026,45.00,despesa,embalagens,Caixas e forminhas,negocio
+20/09/2026,350.00,receita,encomendas,Bolo para festa de aniversario,negocio
+27/09/2026,60.00,despesa,divulgacao,Anuncio em rede social,negocio
