@@ -84,7 +84,7 @@ sistema-controle-financeiro/
 │   ├── calculos.py         # funções puras: somas, médias, percentuais, lucro do negócio
 │   └── relatorio.py        # monta o texto do relatório a partir dos cálculos
 ├── dados/                  # CSVs de exemplo (pessoal, negócio e vendas)
-├── tests/                  # um arquivo de teste por módulo
+├── tests/                  # testes com pytest (cálculos, leitura, relatório, linha de comando)
 └── .github/workflows/ci.yml
 ```
 
@@ -119,3 +119,77 @@ falam com ela, e ela usa as mesmas regras de negócio que o relatório usa hoje.
 | Dados | Arquivos CSV | SQLAlchemy, Alembic, SQLite (dev) e PostgreSQL (produção) |
 | Interfaces | Linha de comando | FastAPI, bot de Telegram, painel web |
 | Infra | | Docker e docker-compose |
+
+## Como rodar
+
+Precisa de Python 3.12 ou mais novo. Não há dependências externas para rodar
+o relatório.
+
+```bash
+git clone https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro.git
+cd sistema-controle-financeiro
+
+python main.py                       # usa dados/movimentacoes.csv
+python main.py caminho/para/outro.csv
+python main.py dados/movimentacoes.csv dados/vendas.csv dados/negocio.csv
+```
+
+O último comando junta os três arquivos de exemplo. No fim do relatório
+aparece a parte que interessa ao autônomo:
+
+```text
+====================================================
+================ NEGÓCIO x PESSOAL =================
+====================================================
+
+Faturamento do negócio: R$ 1095.00
+Custos do negócio: R$ 285.00
+Lucro do negócio: R$ 810.00 (margem de 73.97 %)
+Saldo pessoal: R$ 5627.50
+```
+
+Antes dela vêm o resumo geral, a análise mensal, o histórico, as médias e as
+análises por categoria. Se algum arquivo tiver problema, o programa mostra a
+linha e o motivo e termina com código de saída 1.
+
+## Formatos de CSV
+
+O formato é reconhecido pela primeira linha (cabeçalho). Arquivos em UTF-8.
+
+**Movimentações** (data no formato `dd/mm/aaaa`, `tipo` é `receita` ou
+`despesa`, `conta` é opcional e vale `pessoal` quando falta):
+
+```csv
+data,valor,tipo,categoria,descricao,conta
+06/09/2026,180.00,despesa,insumos,Farinha acucar e ovos,negocio
+01/09/2026,1800.00,receita,salario,Salario mensal,pessoal
+```
+
+**Vendas**, no mesmo formato do
+[analisador-vendas-csv](https://github.com/Diego-Carvalho-1901/analisador-vendas-csv)
+(data `aaaa-mm-dd`; cada linha vira um lançamento do tipo `venda` na conta
+`negocio`, com valor = quantidade x preço):
+
+```csv
+data da venda, produto, categoria, quantidade vendida, preco unitario
+2026-09-05, Bolo de cenoura, Bolos, 4, 45.00
+```
+
+## Como testar
+
+Os testes usam [pytest](https://docs.pytest.org/) e o linter é o
+[ruff](https://docs.astral.sh/ruff/). Recomenda-se um ambiente virtual:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate        # no Windows: .venv\Scripts\activate
+pip install -r requirements-dev.txt
+
+pytest                # roda todos os testes da pasta tests/
+ruff check .          # procura erros e más práticas no código
+ruff format --check . # confere a formatação (use "ruff format ." para corrigir)
+```
+
+Os mesmos comandos rodam no GitHub Actions a cada push na `main` e em todo
+pull request ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). O selo
+no topo deste README mostra se a última execução passou.
