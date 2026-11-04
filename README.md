@@ -1,315 +1,64 @@
-# Sistema de Controle Financeiro
+# Controle financeiro para autônomos e MEIs
 
 [![CI](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/actions/workflows/ci.yml/badge.svg)](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/actions/workflows/ci.yml)
 
-## Sobre o projeto
-Este projeto consiste em um sistema de controle financeiro desenvolvido em Python, capaz de ler e processar movimentações financeiras armazenadas em um arquivo CSV. A aplicação realiza o cálculo de receitas, despesas e saldo, além de gerar análises por categoria e por período. O projeto foi desenvolvido com foco na prática de manipulação de dados, criação de funções, tratamento de erros e organização de informações financeiras.
-
-## Funcionalidades
-Leitura de movimentações financeiras através de arquivo CSV;
-Cálculo do total de receitas e despesas;
-Cálculo do saldo financeiro;
-Análise de receitas e despesas por categoria;
-Cálculo de percentuais por categoria;
-Identificação das maiores e menores movimentações;
-Cálculo de médias financeiras;
-Análise de concentração de despesas;
-Ranking de despesas por categoria;
-Histórico cronológico das movimentações;
-Análise financeira por mês;
-Tratamento de erros relacionados aos dados e ao arquivo CSV.
-
-## Tecnologias utilizadas
-- Python
-- CSV
-- Git e GitHub
-- Visual Studio Code
-
-## Estrutura do projeto
-```text
-sistema_controle_financeiro/
-├── dados/
-│   └── movimentacoes.csv
-├── main.py
-└── README.md
-
-```
-## Como executar
-
-1. Clone este repositório.
-2. Certifique-se de que o arquivo `dados/movimentacoes.csv` está presente.
-3. Execute o `main.py` pelo terminal (opcionalmente passando outro CSV):
-
-```bash
-python main.py
-python main.py caminho/para/outro.csv
-```
-
-## Como rodar os testes
-
-Os testes usam [pytest](https://docs.pytest.org/) e o linter é o [ruff](https://docs.astral.sh/ruff/).
-Recomenda-se um ambiente virtual:
-
-```bash
-python -m venv .venv
-source .venv/bin/activate        # no Windows: .venv\Scripts\activate
-pip install -r requirements-dev.txt
-
-pytest                # roda todos os testes da pasta tests/
-ruff check .          # procura erros e más práticas no código
-ruff format --check . # confere a formatação (use "ruff format ." para corrigir)
-```
-
-Os mesmos comandos rodam automaticamente no GitHub Actions a cada push na `main`
-e em todo pull request (arquivo `.github/workflows/ci.yml`). O selo no topo deste
-README mostra se a última execução passou.
-
-## Exemplo de execução
-```text
-====================================================
-================ ANALISE FINANCEIRA ================
-====================================================
-
-Total de Receitas: R$ 10150.00
-Total de Despesas: R$ 4522.50
-Saldo: R$ 5627.50
-
- >>> ANALISE PERCENTUAL DE RECEITA COMPROMETIDA E RECEITA DISPONIVEL <<< 
-
-Receita Comprometida: 44.56 %
-Receita Disponível: 55.44 %
-
-====================================================
-================== ANALISE MENSAL ==================
-====================================================
-
-
-Mês: August
-Valor de receita: R$ 2350.00
-Valor de despesa: R$ 1085.40
-Valor do saldo: R$ 1264.60
-
-Mês: September
-Valor de receita: R$ 2950.00
-Valor de despesa: R$ 1236.30
-Valor do saldo: R$ 1713.70
-
-Mês: October
-Valor de receita: R$ 2700.00
-Valor de despesa: R$ 945.90
-Valor do saldo: R$ 1754.10
-
-Mês: November
-Valor de receita: R$ 2150.00
-Valor de despesa: R$ 1254.90
-Valor do saldo: R$ 895.10
-
-====================================================
-=========== HISTÓRICO DE MOVIMENTAÇÕES =============
-====================================================
-
-data: 05/08/2026 | valor:     300.00 | Tipo: receita    | Categoria: freelance       | Descricao: Servico de programacao
-data: 10/08/2026 | valor:      85.50 | Tipo: despesa    | Categoria: alimentacao     | Descricao: Supermercado   
-data: 16/08/2026 | valor:    1800.00 | Tipo: receita    | Categoria: salario         | Descricao: Salario mensal 
-data: 17/08/2026 | valor:     120.00 | Tipo: despesa    | Categoria: transporte      | Descricao: Combustivel    
-data: 18/08/2026 | valor:     320.00 | Tipo: despesa    | Categoria: alimentacao     | Descricao: Compras do supermercado
-data: 20/08/2026 | valor:     150.00 | Tipo: despesa    | Categoria: transporte      | Descricao: Combustivel    
-data: 22/08/2026 | valor:     250.00 | Tipo: receita    | Categoria: freelance       | Descricao: Servico de programacao
-data: 25/08/2026 | valor:      89.90 | Tipo: despesa    | Categoria: assinaturas     | Descricao: Internet       
-data: 26/08/2026 | valor:     200.00 | Tipo: despesa    | Categoria: lazer           | Descricao: Restaurante    
-data: 28/08/2026 | valor:     120.00 | Tipo: despesa    | Categoria: lazer           | Descricao: Restaurante    
-data: 01/09/2026 | valor:    1800.00 | Tipo: receita    | Categoria: salario         | Descricao: Salario mensal 
-data: 02/09/2026 | valor:      45.90 | Tipo: despesa    | Categoria: alimentacao     | Descricao: Almoco         
-data: 03/09/2026 | valor:     120.00 | Tipo: despesa    | Categoria: lazer           | Descricao: Cinema e alimentacao
-data: 04/09/2026 | valor:     200.00 | Tipo: despesa    | Categoria: transporte      | Descricao: Combustivel    
-data: 05/09/2026 | valor:     350.00 | Tipo: receita    | Categoria: freelance       | Descricao: Servico de desenvolvimento
-data: 06/09/2026 | valor:      89.90 | Tipo: despesa    | Categoria: assinaturas     | Descricao: Internet       
-data: 07/09/2026 | valor:      75.50 | Tipo: despesa    | Categoria: alimentacao     | Descricao: Supermercado   
-data: 08/09/2026 | valor:     150.00 | Tipo: despesa    | Categoria: educacao        | Descricao: Curso online   
-data: 09/09/2026 | valor:     300.00 | Tipo: receita    | Categoria: freelance       | Descricao: Projeto de programacao
-data: 10/09/2026 | valor:      60.00 | Tipo: despesa    | Categoria: lazer           | Descricao: Saida com amigos
-data: 11/09/2026 | valor:     110.00 | Tipo: despesa    | Categoria: transporte      | Descricao: Manutencao do carro
-data: 12/09/2026 | valor:     250.00 | Tipo: despesa    | Categoria: alimentacao     | Descricao: Compras do mes 
-data: 13/09/2026 | valor:     500.00 | Tipo: receita    | Categoria: outros          | Descricao: Venda de equipamento usado
-data: 14/09/2026 | valor:      35.00 | Tipo: despesa    | Categoria: saude           | Descricao: Farmacia       
-data: 15/09/2026 | valor:     100.00 | Tipo: despesa    | Categoria: educacao        | Descricao: Livros         
-data: 02/10/2026 | valor:    1800.00 | Tipo: receita    | Categoria: salario         | Descricao: Salario mensal 
-data: 04/10/2026 | valor:     500.00 | Tipo: receita    | Categoria: freelance       | Descricao: Projeto de programacao
-data: 05/10/2026 | valor:     200.00 | Tipo: despesa    | Categoria: alimentacao     | Descricao: Supermercado   
-data: 08/10/2026 | valor:     180.00 | Tipo: despesa    | Categoria: transporte      | Descricao: Combustivel    
-data: 09/10/2026 | valor:      75.90 | Tipo: despesa    | Categoria: alimentacao     | Descricao: Supermercado   
-data: 12/10/2026 | valor:     400.00 | Tipo: receita    | Categoria: freelance       | Descricao: Projeto de programacao
-data: 15/10/2026 | valor:      90.00 | Tipo: despesa    | Categoria: assinaturas     | Descricao: Internet       
-data: 18/10/2026 | valor:     150.00 | Tipo: despesa    | Categoria: transporte      | Descricao: Combustivel    
-data: 20/10/2026 | valor:     150.00 | Tipo: despesa    | Categoria: lazer           | Descricao: Cinema e jantar
-data: 27/10/2026 | valor:     100.00 | Tipo: despesa    | Categoria: educacao        | Descricao: Livro tecnico  
-data: 03/11/2026 | valor:    1800.00 | Tipo: receita    | Categoria: salario         | Descricao: Salario mensal 
-data: 06/11/2026 | valor:     350.00 | Tipo: receita    | Categoria: freelance       | Descricao: Servico de desenvolvimento
-data: 07/11/2026 | valor:     350.00 | Tipo: despesa    | Categoria: educacao        | Descricao: Curso online   
-data: 08/11/2026 | valor:      95.00 | Tipo: despesa    | Categoria: alimentacao     | Descricao: Supermercado   
-data: 12/11/2026 | valor:     180.00 | Tipo: despesa    | Categoria: transporte      | Descricao: Combustivel    
-data: 15/11/2026 | valor:     220.00 | Tipo: despesa    | Categoria: alimentacao     | Descricao: Compras do mes 
-data: 16/11/2026 | valor:     120.00 | Tipo: despesa    | Categoria: lazer           | Descricao: Cinema         
-data: 20/11/2026 | valor:     200.00 | Tipo: despesa    | Categoria: educacao        | Descricao: Curso online   
-data: 25/11/2026 | valor:      89.90 | Tipo: despesa    | Categoria: assinaturas     | Descricao: Internet       
-
-===============================================
-============= MAIOR MOVIMENTAÇÃO ==============
-===============================================
-
-= > Data: 01/09/2026 
-= > Valor: R$ 1800.00 
-= > Tipo: receita 
-= > Categoria: salario 
-= > Descricao: Salario mensal
-
-===============================================
-============= MENOR MOVIMENTAÇÃO ==============
-===============================================
-
-= > Data: 14/09/2026 
-= > Valor: R$ 35.00 
-= > Tipo: despesa 
-= > Categoria: saude 
-= > Descricao: Farmacia
-
-====================================================
-============= MEDIAS DE MOVIMENTAÇÕES ==============
-====================================================
-
-Média de Receitas: R$ 845.83
-Média de Despesas: R$ 141.33
-
-=================================================================
-============= PERCENTUAIS DE DESPESAS POR CATEGORIA =============
-=================================================================
-
-= > alimentacao     | R$    1367.80 |      30.24 %
-= > lazer           | R$     770.00 |      17.03 %
-= > transporte      | R$    1090.00 |      24.10 %
-= > assinaturas     | R$     359.70 |       7.95 %
-= > educacao        | R$     900.00 |      19.90 %
-= > saude           | R$      35.00 |       0.77 %
-
-=================================================================
-============= PERCENTUAIS DE RECEITAS POR CATEGORIA =============
-=================================================================
-
-= > salario         | R$    7200.00 |      70.94 %
-= > freelance       | R$    2450.00 |      24.14 %
-= > outros          | R$     500.00 |       4.93 %
-
-=================================================================
-============== ANÁLISE DE CONCENTRAÇÃO DAS DESPESAS =============
-=================================================================
-
-Categoria: alimentacao     | Percentual:           30.24 % | alta concentracao
-Categoria: lazer           | Percentual:           17.03 % | baixa concentracao
-Categoria: transporte      | Percentual:           24.10 % | alta concentracao
-Categoria: assinaturas     | Percentual:            7.95 % | baixa concentracao
-Categoria: educacao        | Percentual:           19.90 % | baixa concentracao
-Categoria: saude           | Percentual:            0.77 % | baixa concentracao
-
-====================================================
-============= DESPESAS POR CATEGORIA ===============
-====================================================
-
-= > alimentacao : R$ 1367.80
-= > lazer : R$ 770.00
-= > transporte : R$ 1090.00
-= > assinaturas : R$ 359.70
-= > educacao : R$ 900.00
-= > saude : R$ 35.00
-
-====================================================
-========= CATEGORIA COM MAIOR DESPESA ==============
-====================================================
-
-= > Categoria com maior despesa: alimentacao
-= > Valor da maior despesa: R$ 1367.80
-
-====================================================
-============== RECEITAS POR CATEGORIA ==============
-====================================================
-
-= > salario : R$ 7200.00
-= > freelance : R$ 2450.00
-= > outros : R$ 500.00
-
-====================================================
-========= CATEGORIA COM MAIOR RECEITA ==============
-====================================================
-
-= > Categoria com maior receita: salario
-= > Valor da maior receita: R$ 7200.00
-
-=======================================================
-================= RANKING DE DESPESAS =================
-=======================================================
-
-1º | Categoria: alimentacao     | Valor: R$    1367.80 | Percentual:      30.24 %
-2º | Categoria: transporte      | Valor: R$    1090.00 | Percentual:      24.10 %
-3º | Categoria: educacao        | Valor: R$     900.00 | Percentual:      19.90 %
-4º | Categoria: lazer           | Valor: R$     770.00 | Percentual:      17.03 %
-5º | Categoria: assinaturas     | Valor: R$     359.70 | Percentual:       7.95 %
-6º | Categoria: saude           | Valor: R$      35.00 | Percentual:       0.77 %
-
-====================================================
-
-```
-
-## Análises realizadas
-
-A partir das movimentações registradas no arquivo CSV, o sistema gera um relatório financeiro contendo:
-
-- Total de receitas e despesas;
-- Saldo financeiro;
-- Distribuição das despesas por categoria;
-- Percentual de participação de cada categoria;
-- Maior e menor movimentação registrada;
-- Média dos valores movimentados;
-- Ranking das categorias com maiores despesas;
-- Histórico completo das movimentações em ordem cronológica;
-- Comparação mensal entre receitas, despesas e saldo;
-- Identificação de categorias com maior concentração de despesas.
-
-## Tratamento e validação de dados
-
-O sistema possui validações para evitar que informações inválidas interrompam o processamento de forma inesperada.
-
-São tratados casos como:
-
-- Arquivo CSV não encontrado;
-- Valores financeiros inválidos;
-- Datas em formato incorreto;
-- Tipos de movimentação inválidos.
-
-Quando um desses problemas é identificado, o sistema informa o erro ao usuário e encerra a execução de forma controlada.
-
-## Conceitos praticados
-
-Durante o desenvolvimento, foram aplicados conceitos importantes de Python, como:
-
-- Manipulação de arquivos CSV;
-- Listas, dicionários e tuplas;
-- Funções e reutilização de código;
-- Estruturas condicionais e de repetição;
-- Conversão e validação de dados;
-- Manipulação de datas com `datetime`;
-- Ordenação de dados;
-- Uso de `sorted()` e `lambda`;
-- Cálculos e agregações de dados;
-- Tratamento de exceções com `try/except`;
-- Organização e refatoração de código.
-
-## Objetivo do projeto
-
-O objetivo deste projeto foi transformar um conjunto de movimentações financeiras armazenadas em CSV em informações organizadas e úteis para análise.
-
-Além de praticar fundamentos de Python, o projeto foi desenvolvido pensando em uma aplicação próxima de problemas de manipulação e análise de dados, servindo como uma etapa da minha evolução em programação e na área de dados.
-
-## Próximos passos
-
-Este projeto faz parte de uma sequência de projetos com níveis progressivos de complexidade.
-
-A ideia é evoluir gradualmente a forma de trabalhar com dados, passando por diferentes fontes, ferramentas e técnicas de processamento, até chegar a projetos mais próximos de aplicações utilizadas em ambientes profissionais.
+App em Python que separa o dinheiro do negócio do dinheiro pessoal e mostra,
+sem planilha, quanto o negócio realmente lucrou no mês.
+
+> **Estado atual:** ferramenta de linha de comando que lê CSVs e gera um
+> relatório. Banco de dados, API e bot de Telegram estão no
+> [roteiro](#roteiro), em desenvolvimento.
+
+## O problema
+
+Quem trabalha por conta própria costuma usar a mesma conta para tudo: a
+farinha do bolo, o aluguel e o cinema saem do mesmo lugar. No fim do mês fica
+difícil responder perguntas simples:
+
+- Quanto o negócio faturou e quanto gastou para produzir?
+- O negócio deu lucro ou eu só estou trocando dinheiro de bolso?
+- Quanto sobrou para mim, tirando o que é do negócio?
+
+Planilhas resolvem, mas exigem disciplina que pouca gente mantém. A ideia do
+projeto é registrar cada movimentação do jeito mais simples possível (no fim,
+uma mensagem no Telegram como `vendi 3 bolos 45`) e deixar o app fazer as
+contas.
+
+## Para quem
+
+- **Autônomos e MEIs** que vendem produtos ou serviços: confeiteiras,
+  costureiras, técnicos, freelancers.
+- Pessoas que **não querem aprender um sistema contábil**, só saber se estão
+  ganhando dinheiro.
+
+Os dados de exemplo em [`dados/`](dados/) seguem esse perfil: uma confeitaria
+caseira que vende bolos e doces e também registra os gastos pessoais.
+
+## O que já funciona
+
+- **Leitura de CSV** em três formatos, reconhecidos pelo cabeçalho (veja
+  [Formatos de CSV](#formatos-de-csv)), inclusive o CSV de vendas do projeto
+  irmão [analisador-vendas-csv](https://github.com/Diego-Carvalho-1901/analisador-vendas-csv).
+- **Vários arquivos no mesmo relatório**: `python main.py a.csv b.csv c.csv`.
+- **Negócio x pessoal**: cada lançamento pertence a uma conta (`negocio` ou
+  `pessoal`). O relatório mostra faturamento, custos, lucro e margem do
+  negócio, e o saldo pessoal separado.
+- **Análises gerais**: receitas, despesas e saldo; resumo por mês; totais,
+  percentuais e ranking por categoria; maior e menor movimentação; médias;
+  alerta de categorias com alta concentração de gastos.
+- **Dinheiro com `Decimal`**, não `float`, para não perder centavos em somas.
+- **Erros de dados com mensagem clara** (arquivo inexistente, valor, data,
+  tipo ou conta inválidos), indicando a linha do problema.
+- **Testes automatizados** com pytest e **CI** no GitHub Actions rodando ruff
+  e pytest em todo pull request.
+
+## O que vem por aí
+
+O plano completo, com critérios de pronto, está nas [issues](#roteiro). Em
+resumo:
+
+| Fase | Entrega |
+|---|---|
+| 2 — Backend | Banco de dados (SQLAlchemy + Alembic), importador de CSV para o banco, API REST com FastAPI, resumos com agregações em SQL, Docker com PostgreSQL |
+| 3 — Bot | Bot de Telegram que entende frases livres (`gastei 30 almoço`), comandos `/resumo`, `/desfazer` e `/meta`, categorização automática, resumo semanal e alerta de meta, deploy com backups |
+| 4 — Produto | Importação de extratos de bancos reais, painel web com gráficos do mês, métricas de uso |
