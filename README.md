@@ -122,7 +122,7 @@ falam com ela, e ela usa as mesmas regras de negócio que o relatório usa hoje.
 
 ## Como rodar
 
-Precisa de Python 3.12 ou mais novo. Não há dependências externas para rodar
+Precisa de Python 3.10 ou mais novo (o CI usa 3.12). Não há dependências externas para rodar
 o relatório.
 
 ```bash
@@ -193,3 +193,43 @@ ruff format --check . # confere a formatação (use "ruff format ." para corrigi
 Os mesmos comandos rodam no GitHub Actions a cada push na `main` e em todo
 pull request ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). O selo
 no topo deste README mostra se a última execução passou.
+
+## Roteiro
+
+O projeto evolui em itens numerados, cada um com uma issue que descreve o
+objetivo, o que fazer, os critérios de pronto e as dependências. Lista
+completa: [issues do repositório](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues).
+
+| Item | Entrega | Status |
+|---|---|---|
+| [01](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/1) | Corrigir os bugs conhecidos do relatório | Concluído |
+| [02](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/2) | Refatorar em pacote com `Decimal`, argparse e type hints | Concluído |
+| [03](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/3) | CI com GitHub Actions, requirements e .gitignore | Concluído |
+| [04](https://github.com/Diego-Carvalho-1901/analisador-vendas-csv/issues/1) | Refatorar e testar o analisador de vendas | Concluído |
+| [05](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/4) | Vendas no núcleo: conta negócio/pessoal e lucro | Concluído |
+| [06](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/5) | Reescrever o README com a visão do produto | Em revisão |
+| [07](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/6) | Banco de dados com SQLAlchemy, SQLite e Alembic | |
+| [08](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/7) | Importador de CSV que grava no banco | |
+| [09](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/8) | API FastAPI com CRUD de lançamentos | |
+| [10](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/9) | Endpoints de resumo com agregações em SQL | |
+| [11](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/10) | Testes da API, Dockerfile e docker-compose com PostgreSQL | |
+| [12](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/11) | Bot de Telegram básico com `/start` | |
+| [13](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/12) | Leitor de frases livres | |
+| [14](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/13) | Comandos `/resumo`, `/desfazer` e `/meta` | |
+| [15](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/14) | Categorização automática por palavras-chave | |
+| [16](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/15) | Resumo semanal automático e alerta de meta em 80% | |
+| [17](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/16) | Colocar no ar com PostgreSQL e backups | |
+| [18](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/17) | Importar extrato CSV de bancos reais | |
+| [19](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/18) | Painel web simples com gráficos do mês | |
+| [20](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/19) | Métricas de uso | |
+
+## Projeto relacionado
+
+[analisador-vendas-csv](https://github.com/Diego-Carvalho-1901/analisador-vendas-csv):
+analisa um CSV de vendas (faturamento por produto e por categoria, produto mais vendido).
+O CSV de vendas dele é aceito diretamente por este app.
+
+## Autor
+
+Diego Carvalho — estudante de Engenharia da Computação.
+GitHub: [@Diego-Carvalho-1901](https://github.com/Diego-Carvalho-1901)
