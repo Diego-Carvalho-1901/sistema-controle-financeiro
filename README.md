@@ -62,3 +62,60 @@ resumo:
 | 2 — Backend | Banco de dados (SQLAlchemy + Alembic), importador de CSV para o banco, API REST com FastAPI, resumos com agregações em SQL, Docker com PostgreSQL |
 | 3 — Bot | Bot de Telegram que entende frases livres (`gastei 30 almoço`), comandos `/resumo`, `/desfazer` e `/meta`, categorização automática, resumo semanal e alerta de meta, deploy com backups |
 | 4 — Produto | Importação de extratos de bancos reais, painel web com gráficos do mês, métricas de uso |
+
+## Arquitetura
+
+### Hoje
+
+O código fica no pacote `financeiro/`, com uma responsabilidade por módulo. O
+fluxo é linear: ler, calcular, formatar.
+
+```text
+CSV(s) ──► leitura.py ──► list[Lancamento] ──► calculos.py ──► relatorio.py ──► terminal
+                              (modelos.py)
+```
+
+```text
+sistema-controle-financeiro/
+├── main.py                 # linha de comando (argparse): recebe os CSVs e imprime o relatório
+├── financeiro/
+│   ├── modelos.py          # dataclass Lancamento: data, valor, tipo, categoria, descrição, conta
+│   ├── leitura.py          # reconhece o formato do CSV e converte cada linha, validando os dados
+│   ├── calculos.py         # funções puras: somas, médias, percentuais, lucro do negócio
+│   └── relatorio.py        # monta o texto do relatório a partir dos cálculos
+├── dados/                  # CSVs de exemplo (pessoal, negócio e vendas)
+├── tests/                  # um arquivo de teste por módulo
+└── .github/workflows/ci.yml
+```
+
+As regras de negócio ficam em funções puras (`calculos.py`), que recebem
+lançamentos e devolvem números, sem ler arquivo nem imprimir nada. Isso deixa
+os testes simples e permite reaproveitar as mesmas funções quando a entrada
+deixar de ser um CSV e passar a ser o banco de dados.
+
+### Para onde vai
+
+```mermaid
+flowchart LR
+    U[Usuário] -- mensagem --> T[Bot de Telegram]
+    U -- navegador --> P[Painel web]
+    C[CSV / extrato] --> I[Importador]
+    T --> A[API FastAPI]
+    P --> A
+    I --> A
+    A --> N[financeiro/<br>regras de negócio]
+    A --> DB[(PostgreSQL)]
+```
+
+A API vira o único ponto de entrada para os dados: bot, painel e importador
+falam com ela, e ela usa as mesmas regras de negócio que o relatório usa hoje.
+
+## Stack
+
+| | Hoje | Planejado |
+|---|---|---|
+| Linguagem | Python 3.12, só biblioteca padrão (`csv`, `decimal`, `datetime`, `argparse`, `dataclasses`) | |
+| Qualidade | pytest, ruff (lint e formatação), GitHub Actions | |
+| Dados | Arquivos CSV | SQLAlchemy, Alembic, SQLite (dev) e PostgreSQL (produção) |
+| Interfaces | Linha de comando | FastAPI, bot de Telegram, painel web |
+| Infra | | Docker e docker-compose |
