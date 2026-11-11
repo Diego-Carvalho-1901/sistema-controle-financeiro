@@ -26,3 +26,6 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Banco SQLite local criado ao rodar o app
+*.db
