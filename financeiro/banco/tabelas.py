@@ -7,7 +7,13 @@ decimal de verdade e guardaria NUMERIC como número de ponto flutuante.
 
 from datetime import date
 
-from sqlalchemy import CheckConstraint, ForeignKey, String, UniqueConstraint
+from sqlalchemy import (
+    CheckConstraint,
+    ForeignKey,
+    MetaData,
+    String,
+    UniqueConstraint,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 from financeiro.modelos import CONTAS, TIPOS
@@ -18,8 +24,21 @@ def _valores_sql(valores: tuple[str, ...]) -> str:
     return ", ".join(f"'{valor}'" for valor in valores)
 
 
+# Dá nomes previsíveis a índices e restrições. O Alembic precisa desses nomes
+# para conseguir apagar ou alterar uma restrição numa migração futura.
+CONVENCAO_DE_NOMES = {
+    "ix": "ix_%(column_0_label)s",
+    "uq": "uq_%(table_name)s_%(column_0_N_name)s",
+    "ck": "ck_%(table_name)s_%(constraint_name)s",
+    "fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s",
+    "pk": "pk_%(table_name)s",
+}
+
+
 class Base(DeclarativeBase):
     """Classe-mãe de todas as tabelas; guarda o `metadata` do esquema."""
+
+    metadata = MetaData(naming_convention=CONVENCAO_DE_NOMES)
 
 
 class Usuario(Base):
