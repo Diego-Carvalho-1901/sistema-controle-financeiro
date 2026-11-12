@@ -82,7 +82,9 @@ sistema-controle-financeiro/
 │   ├── modelos.py          # dataclass Lancamento: data, valor, tipo, categoria, descrição, conta
 │   ├── leitura.py          # reconhece o formato do CSV e converte cada linha, validando os dados
 │   ├── calculos.py         # funções puras: somas, médias, percentuais, lucro do negócio
-│   └── relatorio.py        # monta o texto do relatório a partir dos cálculos
+│   ├── relatorio.py        # monta o texto do relatório a partir dos cálculos
+│   └── banco/              # tabelas (SQLAlchemy), conexão e repositório de lançamentos
+├── migracoes/              # migrações do Alembic (alembic.ini fica na raiz)
 ├── dados/                  # CSVs de exemplo (pessoal, negócio e vendas)
 ├── tests/                  # testes com pytest (cálculos, leitura, relatório, linha de comando)
 └── .github/workflows/ci.yml
@@ -122,12 +124,13 @@ falam com ela, e ela usa as mesmas regras de negócio que o relatório usa hoje.
 
 ## Como rodar
 
-Precisa de Python 3.10 ou mais novo (o CI usa 3.12). Não há dependências externas para rodar
-o relatório.
+Precisa de Python 3.10 ou mais novo (o CI usa 3.12). O relatório usa só a
+biblioteca padrão; o banco de dados usa SQLAlchemy e Alembic.
 
 ```bash
 git clone https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro.git
 cd sistema-controle-financeiro
+pip install -r requirements.txt
 
 python main.py                       # usa dados/movimentacoes.csv
 python main.py caminho/para/outro.csv
@@ -151,6 +154,20 @@ Saldo pessoal: R$ 5627.50
 Antes dela vêm o resumo geral, a análise mensal, o histórico, as médias e as
 análises por categoria. Se algum arquivo tiver problema, o programa mostra a
 linha e o motivo e termina com código de saída 1.
+
+### Banco de dados
+
+O esquema (usuários, categorias e lançamentos) é criado pelas migrações do
+Alembic. Sem configuração nenhuma, ele usa um arquivo SQLite local
+(`financeiro.db`); para outro banco, defina a variável `FINANCEIRO_DB_URL`.
+
+```bash
+alembic upgrade head      # cria ou atualiza as tabelas
+alembic current           # mostra em qual migração o banco está
+alembic downgrade base    # apaga as tabelas
+```
+
+O relatório ainda lê dos CSVs; a gravação dos CSVs no banco vem na issue [08].
 
 ## Formatos de CSV
 
@@ -207,8 +224,8 @@ completa: [issues do repositório](https://github.com/Diego-Carvalho-1901/sistem
 | [03](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/3) | CI com GitHub Actions, requirements e .gitignore | Concluído |
 | [04](https://github.com/Diego-Carvalho-1901/analisador-vendas-csv/issues/1) | Refatorar e testar o analisador de vendas | Concluído |
 | [05](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/4) | Vendas no núcleo: conta negócio/pessoal e lucro | Concluído |
-| [06](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/5) | Reescrever o README com a visão do produto | Em revisão |
-| [07](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/6) | Banco de dados com SQLAlchemy, SQLite e Alembic | |
+| [06](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/5) | Reescrever o README com a visão do produto | Concluído |
+| [07](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/6) | Banco de dados com SQLAlchemy, SQLite e Alembic | Em revisão |
 | [08](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/7) | Importador de CSV que grava no banco | |
 | [09](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/8) | API FastAPI com CRUD de lançamentos | |
 | [10](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/9) | Endpoints de resumo com agregações em SQL | |
