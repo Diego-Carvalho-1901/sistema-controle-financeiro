@@ -47,6 +47,17 @@ class RepositorioLancamentos:
         self.sessao.flush()  # envia o INSERT para o banco preencher o id
         return usuario.id
 
+    def obter_ou_criar_usuario(self, nome: str) -> int:
+        """Devolve o id do usuário com esse nome, cadastrando-o se não existir.
+
+        Se houver mais de um usuário com o mesmo nome, usa o mais antigo.
+        """
+        consulta = select(Usuario.id).where(Usuario.nome == nome).order_by(Usuario.id)
+        usuario_id = self.sessao.scalars(consulta).first()
+        if usuario_id is None:
+            usuario_id = self.criar_usuario(nome)
+        return usuario_id
+
     def adicionar(self, usuario_id: int, lancamento: Lancamento) -> int:
         """Grava um lançamento do usuário e devolve o id da linha criada.
 
