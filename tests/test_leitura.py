@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import pytest
 
-from financeiro.leitura import ErroLeitura, carregar_csv, ler_lancamentos
+from financeiro.leitura import ErroLeitura, carregar_csv, ler_lancamentos, ler_linhas
 from financeiro.modelos import Lancamento
 
 CABECALHO = ["data", "valor", "tipo", "categoria", "descricao"]
@@ -197,3 +197,37 @@ def test_venda_invalida_indica_o_numero_da_linha(linha, mensagem):
 
     with pytest.raises(ErroLeitura, match=f"Linha 2: {mensagem}"):
         ler_lancamentos([cabecalho, linha])
+
+
+# --- Leitura linha a linha, usada pelo importador (issue [08]) ---
+
+
+def test_ler_linhas_continua_depois_de_uma_linha_invalida():
+    linhas = [
+        CABECALHO,
+        ["01/09/2026", "10.00", "despesa", "mercado", "Pão"],
+        ["32/09/2026", "10.00", "despesa", "mercado", "Data errada"],
+        [],
+        ["03/09/2026", "abc", "despesa", "mercado", "Valor errado"],
+        ["04/09/2026", "5.00", "receita", "bico"],
+        ["05/09/2026", "7.50", "receita", "bico", "Conserto"],
+    ]
+
+    resultados = list(ler_linhas(linhas))
+
+    # A linha em branco (linha 4) é pulada e não aparece no resultado.
+    assert [numero for numero, _ in resultados] == [2, 3, 5, 6, 7]
+    tipos = [type(resultado).__name__ for _, resultado in resultados]
+    assert tipos == [
+        "Lancamento",
+        "ErroLeitura",
+        "ErroLeitura",
+        "ErroLeitura",
+        "Lancamento",
+    ]
+    assert "Linha 6: esperadas 5 colunas" in str(resultados[3][1])
+
+
+def test_ler_linhas_ainda_recusa_cabecalho_desconhecido():
+    with pytest.raises(ErroLeitura, match="cabeçalho"):
+        list(ler_linhas([["nome", "idade"]]))

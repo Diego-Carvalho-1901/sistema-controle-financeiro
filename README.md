@@ -78,11 +78,13 @@ CSV(s) ──► leitura.py ──► list[Lancamento] ──► calculos.py ─
 ```text
 sistema-controle-financeiro/
 ├── main.py                 # linha de comando (argparse): recebe os CSVs e imprime o relatório
+├── importar.py             # linha de comando: grava CSVs no banco e mostra o relatório da importação
 ├── financeiro/
 │   ├── modelos.py          # dataclass Lancamento: data, valor, tipo, categoria, descrição, conta
 │   ├── leitura.py          # reconhece o formato do CSV e converte cada linha, validando os dados
 │   ├── calculos.py         # funções puras: somas, médias, percentuais, lucro do negócio
 │   ├── relatorio.py        # monta o texto do relatório a partir dos cálculos
+│   ├── importacao.py       # importa CSVs para o banco sem duplicar e lista as linhas com erro
 │   └── banco/              # tabelas (SQLAlchemy), conexão e repositório de lançamentos
 ├── migracoes/              # migrações do Alembic (alembic.ini fica na raiz)
 ├── dados/                  # CSVs de exemplo (pessoal, negócio e vendas)
@@ -167,7 +169,28 @@ alembic current           # mostra em qual migração o banco está
 alembic downgrade base    # apaga as tabelas
 ```
 
-O relatório ainda lê dos CSVs; a gravação dos CSVs no banco vem na issue [08].
+Para gravar CSVs no banco, use o `importar.py` (aceita os mesmos formatos do
+relatório). Os lançamentos ficam ligados ao usuário informado, que é criado
+na primeira importação:
+
+```bash
+python importar.py dados/movimentacoes.csv dados/vendas.csv --usuario Ana
+```
+
+```text
+dados/vendas.csv
+Linhas importadas: 0
+Linhas ignoradas (já estavam no banco): 4
+  2, 3, 4, 5
+Linhas com erro: 0
+```
+
+As linhas válidas são gravadas e as inválidas aparecem com o número e o
+motivo. Importar o mesmo arquivo de novo não duplica nada: uma linha é
+ignorada quando o banco já tem um lançamento com todos os campos iguais. A
+comparação é por contagem, então dois gastos idênticos no mesmo arquivo
+(dois cafés iguais no mesmo dia) são gravados os dois. O relatório
+(`main.py`) ainda lê dos CSVs.
 
 ## Formatos de CSV
 

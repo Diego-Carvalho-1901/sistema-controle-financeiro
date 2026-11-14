@@ -144,3 +144,10 @@ def test_conversao_reais_centavos_ida_e_volta(reais, centavos):
 def test_recusa_fracao_de_centavo():
     with pytest.raises(ValueError, match="2 casas"):
         reais_para_centavos(Decimal("1.005"))
+
+
+def test_obter_ou_criar_usuario_reaproveita_o_existente(repo):
+    ana = repo.obter_ou_criar_usuario("Ana")
+
+    assert repo.obter_ou_criar_usuario("Ana") == ana
+    assert repo.obter_ou_criar_usuario("Bia") != ana

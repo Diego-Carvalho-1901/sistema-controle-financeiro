@@ -9,7 +9,7 @@ Três formatos são aceitos, reconhecidos pelo cabeçalho (primeira linha):
 """
 
 import csv
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -52,7 +52,33 @@ def ler_lancamentos(linhas: Iterable[list[str]]) -> list[Lancamento]:
     O formato é escolhido pelo cabeçalho. Linhas em branco são ignoradas.
     Lança ErroLeitura, indicando o número da linha no arquivo, quando o CSV
     está vazio, quando o cabeçalho não é reconhecido ou quando alguma linha
-    é inválida.
+    é inválida (para no primeiro erro).
+    """
+    lancamentos = []
+    for _numero_linha, resultado in ler_linhas(linhas):
+        if isinstance(resultado, ErroLeitura):
+            raise resultado
+        lancamentos.append(resultado)
+
+    if not lancamentos:
+        raise ErroLeitura("O arquivo CSV não contém nenhuma movimentação.")
+    return lancamentos
+
+
+ResultadoLinha = Lancamento | ErroLeitura
+
+
+def ler_linhas(linhas: Iterable[list[str]]) -> Iterator[tuple[int, ResultadoLinha]]:
+    """Converte linha a linha, sem parar no primeiro erro.
+
+    Gera pares (número da linha no arquivo, resultado), em que o resultado é
+    o Lancamento da linha ou o ErroLeitura que explica por que ela é
+    inválida. Quem chama decide o que fazer com cada erro: ler_lancamentos
+    para no primeiro; o importador junta todos num relatório.
+
+    Problemas no arquivo inteiro (CSV vazio ou cabeçalho desconhecido) ainda
+    são lançados como ErroLeitura, porque nenhuma linha pode ser lida.
+    Linhas em branco são puladas.
     """
     linhas = iter(linhas)
     cabecalho = next(linhas, None)
@@ -60,21 +86,26 @@ def ler_lancamentos(linhas: Iterable[list[str]]) -> list[Lancamento]:
         raise ErroLeitura("O arquivo CSV está vazio.")
 
     colunas, converter = _escolher_formato(cabecalho)
-    lancamentos = []
     # O cabeçalho é a linha 1, então os dados começam na linha 2.
     for numero_linha, linha in enumerate(linhas, start=2):
         if not linha:
             continue
         if len(linha) != len(colunas):
-            raise ErroLeitura(
-                f"Linha {numero_linha}: esperadas {len(colunas)} colunas "
-                f"({', '.join(colunas)}), mas foram encontradas {len(linha)}."
+            yield (
+                numero_linha,
+                ErroLeitura(
+                    f"Linha {numero_linha}: esperadas {len(colunas)} colunas "
+                    f"({', '.join(colunas)}), mas foram encontradas {len(linha)}."
+                ),
             )
-        lancamentos.append(converter([campo.strip() for campo in linha], numero_linha))
-
-    if not lancamentos:
-        raise ErroLeitura("O arquivo CSV não contém nenhuma movimentação.")
-    return lancamentos
+            continue
+        try:
+            yield (
+                numero_linha,
+                converter([campo.strip() for campo in linha], numero_linha),
+            )
+        except ErroLeitura as erro:
+            yield numero_linha, erro
 
 
 Conversor = Callable[[list[str], int], Lancamento]
