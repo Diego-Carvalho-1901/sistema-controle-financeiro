@@ -151,3 +151,60 @@ def test_obter_ou_criar_usuario_reaproveita_o_existente(repo):
 
     assert repo.obter_ou_criar_usuario("Ana") == ana
     assert repo.obter_ou_criar_usuario("Bia") != ana
+
+
+def test_filtra_por_conta_e_categoria(repo):
+    usuario = repo.criar_usuario("Ana")
+    repo.adicionar(usuario, despesa(1, "1", "mercado"))
+    repo.adicionar(usuario, despesa(2, "2", "aluguel"))
+    repo.adicionar(
+        usuario,
+        Lancamento(date(2026, 9, 3), Decimal(3), "despesa", "mercado", "x", "negocio"),
+    )
+
+    assert [lanc.valor for lanc in repo.listar(usuario, categoria="mercado")] == [
+        Decimal(1),
+        Decimal(3),
+    ]
+    assert [lanc.valor for lanc in repo.listar(usuario, conta="negocio")] == [
+        Decimal(3)
+    ]
+
+
+def test_listar_com_ids_devolve_o_id_de_cada_lancamento(repo):
+    usuario = repo.criar_usuario("Ana")
+    primeiro = repo.adicionar(usuario, despesa(1, "1"))
+    segundo = repo.adicionar(usuario, despesa(2, "2"))
+
+    assert [id_ for id_, _lanc in repo.listar_com_ids(usuario)] == [primeiro, segundo]
+
+
+def test_buscar_atualizar_e_excluir(repo):
+    usuario = repo.criar_usuario("Ana")
+    id_ = repo.adicionar(usuario, despesa(1, "10", "mercado"))
+    novo = despesa(5, "12.50", "feira")
+
+    assert repo.buscar(usuario, id_) == despesa(1, "10", "mercado")
+    assert repo.atualizar(usuario, id_, novo) is True
+    assert repo.buscar(usuario, id_) == novo
+    assert repo.excluir(usuario, id_) is True
+    assert repo.buscar(usuario, id_) is None
+    assert repo.excluir(usuario, id_) is False
+
+
+def test_nao_mexe_em_lancamento_de_outro_usuario(repo):
+    ana = repo.criar_usuario("Ana")
+    bia = repo.criar_usuario("Bia")
+    id_da_ana = repo.adicionar(ana, despesa(1, "10"))
+
+    assert repo.buscar(bia, id_da_ana) is None
+    assert repo.atualizar(bia, id_da_ana, despesa(2, "99")) is False
+    assert repo.excluir(bia, id_da_ana) is False
+    assert repo.listar(ana) == [despesa(1, "10")]
+
+
+def test_usuario_existe(repo):
+    ana = repo.criar_usuario("Ana")
+
+    assert repo.usuario_existe(ana)
+    assert not repo.usuario_existe(ana + 1)
