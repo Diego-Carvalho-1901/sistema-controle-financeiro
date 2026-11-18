@@ -6,7 +6,8 @@ App em Python que separa o dinheiro do negócio do dinheiro pessoal e mostra,
 sem planilha, quanto o negócio realmente lucrou no mês.
 
 > **Estado atual:** ferramenta de linha de comando que lê CSVs e gera um
-> relatório. Banco de dados, API e bot de Telegram estão no
+> relatório, com banco de dados, importador de CSV e uma API REST local
+> (FastAPI). Resumos pela API, Docker e bot de Telegram estão no
 > [roteiro](#roteiro), em desenvolvimento.
 
 ## O problema
@@ -85,6 +86,7 @@ sistema-controle-financeiro/
 │   ├── calculos.py         # funções puras: somas, médias, percentuais, lucro do negócio
 │   ├── relatorio.py        # monta o texto do relatório a partir dos cálculos
 │   ├── importacao.py       # importa CSVs para o banco sem duplicar e lista as linhas com erro
+│   ├── api/                # API REST (FastAPI): esquemas Pydantic e rotas do CRUD de lançamentos
 │   └── banco/              # tabelas (SQLAlchemy), conexão e repositório de lançamentos
 ├── migracoes/              # migrações do Alembic (alembic.ini fica na raiz)
 ├── dados/                  # CSVs de exemplo (pessoal, negócio e vendas)
@@ -121,7 +123,7 @@ falam com ela, e ela usa as mesmas regras de negócio que o relatório usa hoje.
 | Linguagem | Python 3.12, só biblioteca padrão (`csv`, `decimal`, `datetime`, `argparse`, `dataclasses`) | |
 | Qualidade | pytest, ruff (lint e formatação), GitHub Actions | |
 | Dados | Arquivos CSV | SQLAlchemy, Alembic, SQLite (dev) e PostgreSQL (produção) |
-| Interfaces | Linha de comando | FastAPI, bot de Telegram, painel web |
+| Interfaces | Linha de comando, API REST com FastAPI | Bot de Telegram, painel web |
 | Infra | | Docker e docker-compose |
 
 ## Como rodar
@@ -192,6 +194,39 @@ comparação é por contagem, então dois gastos idênticos no mesmo arquivo
 (dois cafés iguais no mesmo dia) são gravados os dois. O relatório
 (`main.py`) ainda lê dos CSVs.
 
+### API REST
+
+A API usa o mesmo banco (rode `alembic upgrade head` antes) e expõe o CRUD
+de lançamentos. A documentação interativa (Swagger) fica em
+<http://127.0.0.1:8000/docs>, onde dá para testar cada rota pelo navegador.
+
+```bash
+uvicorn financeiro.api.app:app --reload
+```
+
+| Método | Rota | O que faz |
+|---|---|---|
+| `POST` | `/usuarios` | cadastra um usuário |
+| `POST` | `/usuarios/{usuario_id}/lancamentos` | cria um lançamento |
+| `GET` | `/usuarios/{usuario_id}/lancamentos` | lista, com filtros opcionais `inicio`, `fim`, `conta` e `categoria` |
+| `GET` | `/usuarios/{usuario_id}/lancamentos/{id}` | devolve um lançamento |
+| `PUT` | `/usuarios/{usuario_id}/lancamentos/{id}` | substitui os campos de um lançamento |
+| `DELETE` | `/usuarios/{usuario_id}/lancamentos/{id}` | exclui um lançamento |
+
+```bash
+curl -X POST http://127.0.0.1:8000/usuarios/1/lancamentos \
+  -H "Content-Type: application/json" \
+  -d '{"data": "2026-11-10", "valor": "45.90", "tipo": "venda",
+       "categoria": "bolos", "descricao": "Bolo", "conta": "negocio",
+       "produto": "Bolo de cenoura", "quantidade": 3}'
+```
+
+Datas vão no formato ISO (`aaaa-mm-dd`) e valores como texto (`"45.90"`),
+para não passar por `float`. Dados inválidos são recusados com status 422 e
+o nome do campo errado; usuário ou lançamento inexistente devolve 404. Ainda
+não há login: o usuário vem na URL, então por enquanto a API é só para uso
+local.
+
 ## Formatos de CSV
 
 O formato é reconhecido pela primeira linha (cabeçalho). Arquivos em UTF-8.
@@ -248,9 +283,9 @@ completa: [issues do repositório](https://github.com/Diego-Carvalho-1901/sistem
 | [04](https://github.com/Diego-Carvalho-1901/analisador-vendas-csv/issues/1) | Refatorar e testar o analisador de vendas | Concluído |
 | [05](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/4) | Vendas no núcleo: conta negócio/pessoal e lucro | Concluído |
 | [06](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/5) | Reescrever o README com a visão do produto | Concluído |
-| [07](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/6) | Banco de dados com SQLAlchemy, SQLite e Alembic | Em revisão |
-| [08](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/7) | Importador de CSV que grava no banco | |
-| [09](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/8) | API FastAPI com CRUD de lançamentos | |
+| [07](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/6) | Banco de dados com SQLAlchemy, SQLite e Alembic | Concluído |
+| [08](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/7) | Importador de CSV que grava no banco | Concluído |
+| [09](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/8) | API FastAPI com CRUD de lançamentos | Em revisão |
 | [10](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/9) | Endpoints de resumo com agregações em SQL | |
 | [11](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/10) | Testes da API, Dockerfile e docker-compose com PostgreSQL | |
 | [12](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/11) | Bot de Telegram básico com `/start` | |
