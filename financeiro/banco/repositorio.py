@@ -58,22 +58,17 @@ class RepositorioLancamentos:
             usuario_id = self.criar_usuario(nome)
         return usuario_id
 
+    def usuario_existe(self, usuario_id: int) -> bool:
+        """Diz se há um usuário cadastrado com esse id."""
+        return self.sessao.get(Usuario, usuario_id) is not None
+
     def adicionar(self, usuario_id: int, lancamento: Lancamento) -> int:
         """Grava um lançamento do usuário e devolve o id da linha criada.
 
         A categoria é criada na primeira vez que aparece para esse usuário.
         """
-        linha = LancamentoTabela(
-            usuario_id=usuario_id,
-            categoria=self._obter_ou_criar_categoria(usuario_id, lancamento.categoria),
-            data=lancamento.data,
-            valor_centavos=reais_para_centavos(lancamento.valor),
-            tipo=lancamento.tipo,
-            conta=lancamento.conta,
-            descricao=lancamento.descricao,
-            produto=lancamento.produto,
-            quantidade=lancamento.quantidade,
-        )
+        linha = LancamentoTabela(usuario_id=usuario_id)
+        self._preencher(linha, lancamento)
         self.sessao.add(linha)
         self.sessao.flush()
         return linha.id
@@ -83,10 +78,29 @@ class RepositorioLancamentos:
         usuario_id: int,
         inicio: date | None = None,
         fim: date | None = None,
+        conta: str | None = None,
+        categoria: str | None = None,
     ) -> list[Lancamento]:
         """Devolve os lançamentos do usuário em ordem de data.
 
-        `inicio` e `fim` (inclusivos) filtram o período, se informados.
+        Os filtros são opcionais: `inicio` e `fim` (inclusivos) limitam o
+        período; `conta` e `categoria` só deixam passar os iguais.
+        """
+        registros = self.listar_com_ids(usuario_id, inicio, fim, conta, categoria)
+        return [lancamento for _id, lancamento in registros]
+
+    def listar_com_ids(
+        self,
+        usuario_id: int,
+        inicio: date | None = None,
+        fim: date | None = None,
+        conta: str | None = None,
+        categoria: str | None = None,
+    ) -> list[tuple[int, Lancamento]]:
+        """Igual a listar(), mas devolve pares (id, lançamento).
+
+        O id é o que permite editar ou excluir um lançamento depois (a API
+        precisa dele; os cálculos, não).
         """
         consulta = (
             select(LancamentoTabela)
@@ -98,7 +112,64 @@ class RepositorioLancamentos:
             consulta = consulta.where(LancamentoTabela.data >= inicio)
         if fim is not None:
             consulta = consulta.where(LancamentoTabela.data <= fim)
-        return [_para_lancamento(linha) for linha in self.sessao.scalars(consulta)]
+        if conta is not None:
+            consulta = consulta.where(LancamentoTabela.conta == conta)
+        if categoria is not None:
+            consulta = consulta.where(Categoria.nome == categoria)
+        return [
+            (linha.id, _para_lancamento(linha))
+            for linha in self.sessao.scalars(consulta)
+        ]
+
+    def buscar(self, usuario_id: int, lancamento_id: int) -> Lancamento | None:
+        """Devolve o lançamento com esse id, ou None se não for do usuário."""
+        linha = self._linha_do_usuario(usuario_id, lancamento_id)
+        return None if linha is None else _para_lancamento(linha)
+
+    def atualizar(
+        self, usuario_id: int, lancamento_id: int, lancamento: Lancamento
+    ) -> bool:
+        """Troca todos os campos do lançamento; devolve False se ele não existir.
+
+        Um lançamento de outro usuário conta como inexistente: assim ninguém
+        descobre (nem altera) dados alheios só tentando ids.
+        """
+        linha = self._linha_do_usuario(usuario_id, lancamento_id)
+        if linha is None:
+            return False
+        self._preencher(linha, lancamento)
+        self.sessao.flush()
+        return True
+
+    def excluir(self, usuario_id: int, lancamento_id: int) -> bool:
+        """Apaga o lançamento; devolve False se ele não existir para o usuário."""
+        linha = self._linha_do_usuario(usuario_id, lancamento_id)
+        if linha is None:
+            return False
+        self.sessao.delete(linha)
+        self.sessao.flush()
+        return True
+
+    def _linha_do_usuario(
+        self, usuario_id: int, lancamento_id: int
+    ) -> LancamentoTabela | None:
+        linha = self.sessao.get(LancamentoTabela, lancamento_id)
+        if linha is None or linha.usuario_id != usuario_id:
+            return None
+        return linha
+
+    def _preencher(self, linha: LancamentoTabela, lancamento: Lancamento) -> None:
+        """Copia os campos do Lancamento para a linha do banco."""
+        linha.categoria = self._obter_ou_criar_categoria(
+            linha.usuario_id, lancamento.categoria
+        )
+        linha.data = lancamento.data
+        linha.valor_centavos = reais_para_centavos(lancamento.valor)
+        linha.tipo = lancamento.tipo
+        linha.conta = lancamento.conta
+        linha.descricao = lancamento.descricao
+        linha.produto = lancamento.produto
+        linha.quantidade = lancamento.quantidade
 
     def _obter_ou_criar_categoria(self, usuario_id: int, nome: str) -> Categoria:
         consulta = select(Categoria).where(
