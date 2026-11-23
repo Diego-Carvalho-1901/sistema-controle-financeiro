@@ -243,9 +243,10 @@ curl "http://127.0.0.1:8000/usuarios/1/resumos/categorias?inicio=2026-11-01&fim=
 
 Datas vão no formato ISO (`aaaa-mm-dd`) e valores como texto (`"45.90"`),
 para não passar por `float`. Dados inválidos são recusados com status 422 e
-o nome do campo errado; usuário ou lançamento inexistente devolve 404. Ainda
-não há login: o usuário vem na URL, então por enquanto a API é só para uso
-local.
+o nome do campo errado; usuário ou lançamento inexistente devolve 404. Não
+há login de usuário (o usuário vem na URL): para expor a API, defina
+`FINANCEIRO_API_KEY`, e toda rota passa a exigir o cabeçalho `X-API-Key`
+(veja [docs/deploy.md](docs/deploy.md)).
 
 ### Com Docker (API + PostgreSQL)
 
@@ -328,6 +329,14 @@ ela**, e essa regra vence o dicionário nos próximos lançamentos.
   uma vez por mês por categoria (a tabela `alertas_meta` guarda isso). Os testes (`tests/test_bot.py`) exercitam a lógica do bot contra
 a API de verdade, mas sem chamar o Telegram.
 
+### Em produção
+
+O guia [docs/deploy.md](docs/deploy.md) explica como escolher a
+hospedagem, configurar as variáveis de ambiente, subir com o
+`docker-compose.prod.yml`, proteger a API com a `FINANCEIRO_API_KEY` e
+fazer backup diário com o `scripts/backup.sh`. A rota `GET /saude` serve
+para a hospedagem monitorar se a API e o banco estão no ar.
+
 ## Formatos de CSV
 
 O formato é reconhecido pela primeira linha (cabeçalho). Arquivos em UTF-8.
@@ -405,8 +414,8 @@ completa: [issues do repositório](https://github.com/Diego-Carvalho-1901/sistem
 | [13](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/12) | Leitor de frases livres | Concluído |
 | [14](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/13) | Comandos `/resumo`, `/desfazer` e `/meta` | Concluído |
 | [15](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/14) | Categorização automática por palavras-chave | Concluído |
-| [16](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/15) | Resumo semanal automático e alerta de meta em 80% | Em revisão |
-| [17](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/16) | Colocar no ar com PostgreSQL e backups | |
+| [16](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/15) | Resumo semanal automático e alerta de meta em 80% | Concluído |
+| [17](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/16) | Colocar no ar com PostgreSQL e backups | Preparado (falta o deploy) |
 | [18](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/17) | Importar extrato CSV de bancos reais | |
 | [19](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/18) | Painel web simples com gráficos do mês | |
 | [20](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/19) | Métricas de uso | |
