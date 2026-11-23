@@ -219,6 +219,8 @@ uvicorn financeiro.api.app:app --reload
 | `DELETE` | `/usuarios/{usuario_id}/lancamentos/ultimo` | exclui o último lançamento gravado |
 | `PUT` | `/usuarios/{usuario_id}/metas/{categoria}` | define a meta mensal de gastos da categoria |
 | `GET` | `/usuarios/{usuario_id}/metas` | metas com o gasto do mês (`dia` escolhe o mês) |
+| `GET` | `/usuarios/{usuario_id}/categorias/sugestao?descricao=...` | sugere a categoria pelas palavras-chave |
+| `PUT` | `/usuarios/{usuario_id}/lancamentos/ultimo/categoria` | corrige a categoria do último lançamento e aprende a regra |
 
 ```bash
 curl -X POST http://127.0.0.1:8000/usuarios/1/lancamentos \
@@ -304,7 +306,15 @@ Comandos para consultar e corrigir:
 | `/resumo` ou `/resumo semana` | faturamento, custos e lucro do negócio, saldo pessoal e os maiores gastos do mês (ou da semana) |
 | `/desfazer` | apaga o último lançamento anotado |
 | `/meta mercado 500` | define a meta mensal de gastos de uma categoria |
-| `/meta` | mostra as metas e quanto de cada uma já foi gasto no mês | Os testes (`tests/test_bot.py`) exercitam a lógica do bot contra
+| `/meta` | mostra as metas e quanto de cada uma já foi gasto no mês |
+| `/corrigir transporte` | troca a categoria do último lançamento e aprende a regra |
+
+**Categorias automáticas.** Gastos e recebimentos ganham uma categoria
+pelas palavras da descrição ("posto" e "uber" viram `transporte`,
+"almoço" vira `alimentacao`; o dicionário fica em
+`financeiro/categorizacao.py`). Quando a pessoa usa `/corrigir`, a palavra
+principal da descrição passa a apontar para a nova categoria **só para
+ela**, e essa regra vence o dicionário nos próximos lançamentos. Os testes (`tests/test_bot.py`) exercitam a lógica do bot contra
 a API de verdade, mas sem chamar o Telegram.
 
 ## Formatos de CSV
@@ -382,8 +392,8 @@ completa: [issues do repositório](https://github.com/Diego-Carvalho-1901/sistem
 | [11](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/10) | Testes da API, Dockerfile e docker-compose com PostgreSQL | Concluído |
 | [12](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/11) | Bot de Telegram básico com `/start` | Concluído |
 | [13](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/12) | Leitor de frases livres | Concluído |
-| [14](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/13) | Comandos `/resumo`, `/desfazer` e `/meta` | Em revisão |
-| [15](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/14) | Categorização automática por palavras-chave | |
+| [14](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/13) | Comandos `/resumo`, `/desfazer` e `/meta` | Concluído |
+| [15](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/14) | Categorização automática por palavras-chave | Em revisão |
 | [16](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/15) | Resumo semanal automático e alerta de meta em 80% | |
 | [17](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/16) | Colocar no ar com PostgreSQL e backups | |
 | [18](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/17) | Importar extrato CSV de bancos reais | |
