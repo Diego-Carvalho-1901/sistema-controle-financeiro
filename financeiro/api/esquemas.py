@@ -28,6 +28,7 @@ class UsuarioEntrada(BaseModel):
     """Dados para cadastrar um usuário."""
 
     nome: str = Field(min_length=1, max_length=100)
+    telegram_id: int | None = None
 
 
 class UsuarioSaida(UsuarioEntrada):

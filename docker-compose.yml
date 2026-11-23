@@ -34,5 +34,17 @@ services:
         # Espera o PostgreSQL aceitar conexões antes de rodar as migrações.
         condition: service_healthy
 
+  # O bot só sobe com "docker compose --profile bot up", porque precisa do
+  # TELEGRAM_TOKEN no arquivo .env (veja o README).
+  bot:
+    build: .
+    command: ["python", "-m", "financeiro.bot"]
+    profiles: ["bot"]
+    environment:
+      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN:-}
+      FINANCEIRO_API_URL: http://api:8000
+    depends_on:
+      - api
+
 volumes:
   dados-banco:
