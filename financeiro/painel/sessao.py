@@ -21,7 +21,8 @@ def criar_token(
     segredo: str, usuario_id: int, proposito: str, agora: float | None = None
 ) -> str:
     """Gera um token para o usuário que vence em VALIDADE[proposito]."""
-    expira = int((agora or time.time()) + VALIDADE[proposito])
+    agora = time.time() if agora is None else agora
+    expira = int(agora + VALIDADE[proposito])
     dados = f"{usuario_id}:{expira}:{proposito}".encode()
     return f"{_b64(dados)}.{_assinar(segredo, dados)}"
 
@@ -46,7 +47,8 @@ def ler_token(
         usuario_id, expira = int(usuario_id), int(expira)
     except ValueError:
         return None
-    if proposito_token != proposito or (agora or time.time()) > expira:
+    agora = time.time() if agora is None else agora
+    if proposito_token != proposito or agora > expira:
         return None
     return usuario_id
 
