@@ -40,9 +40,9 @@ class RepositorioLancamentos:
     def __init__(self, sessao: Session) -> None:
         self.sessao = sessao
 
-    def criar_usuario(self, nome: str) -> int:
+    def criar_usuario(self, nome: str, telegram_id: int | None = None) -> int:
         """Cadastra um usuário e devolve o id dele."""
-        usuario = Usuario(nome=nome)
+        usuario = Usuario(nome=nome, telegram_id=telegram_id)
         self.sessao.add(usuario)
         self.sessao.flush()  # envia o INSERT para o banco preencher o id
         return usuario.id
@@ -57,6 +57,11 @@ class RepositorioLancamentos:
         if usuario_id is None:
             usuario_id = self.criar_usuario(nome)
         return usuario_id
+
+    def buscar_usuario_por_telegram(self, telegram_id: int) -> Usuario | None:
+        """Devolve o usuário ligado a essa conta do Telegram, se houver."""
+        consulta = select(Usuario).where(Usuario.telegram_id == telegram_id)
+        return self.sessao.scalars(consulta).first()
 
     def usuario_existe(self, usuario_id: int) -> bool:
         """Diz se há um usuário cadastrado com esse id."""

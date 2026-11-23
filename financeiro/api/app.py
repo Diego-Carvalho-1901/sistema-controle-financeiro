@@ -34,9 +34,26 @@ rotas = APIRouter()
 @rotas.post("/usuarios", status_code=status.HTTP_201_CREATED, tags=["usuários"])
 def criar_usuario(dados: UsuarioEntrada, repo: Repositorio) -> UsuarioSaida:
     """Cadastra um usuário."""
-    usuario_id = repo.criar_usuario(dados.nome)
+    if dados.telegram_id is not None and repo.buscar_usuario_por_telegram(
+        dados.telegram_id
+    ):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT, "já existe um usuário com esse telegram_id"
+        )
+    usuario_id = repo.criar_usuario(dados.nome, dados.telegram_id)
     repo.sessao.commit()
-    return UsuarioSaida(id=usuario_id, nome=dados.nome)
+    return UsuarioSaida(id=usuario_id, **dados.model_dump())
+
+
+@rotas.get("/usuarios/telegram/{telegram_id}", tags=["usuários"])
+def obter_usuario_do_telegram(telegram_id: int, repo: Repositorio) -> UsuarioSaida:
+    """Devolve o usuário ligado a uma conta do Telegram (usado pelo bot)."""
+    usuario = repo.buscar_usuario_por_telegram(telegram_id)
+    if usuario is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "usuário não encontrado")
+    return UsuarioSaida(
+        id=usuario.id, nome=usuario.nome, telegram_id=usuario.telegram_id
+    )
 
 
 @rotas.post(ROTA_LANCAMENTOS, status_code=status.HTTP_201_CREATED, tags=["lançamentos"])

@@ -240,3 +240,27 @@ def test_resumo_recusa_periodo_invertido(cliente, usuario):
     resposta = cliente.get(f"/usuarios/{usuario}/resumos/mensal", params=params)
 
     assert resposta.status_code == 422
+
+
+# --- Usuários do Telegram (issue [12]) ---
+
+
+def test_cria_e_busca_usuario_pelo_telegram_id(cliente):
+    telegram_id = 5_000_000_000  # passa de 32 bits, como os ids reais
+    criado = cliente.post("/usuarios", json={"nome": "Ana", "telegram_id": telegram_id})
+
+    resposta = cliente.get(f"/usuarios/telegram/{telegram_id}")
+
+    assert criado.status_code == 201
+    assert resposta.json() == criado.json()
+
+
+def test_telegram_id_nao_cadastrado_da_404(cliente):
+    assert cliente.get("/usuarios/telegram/123").status_code == 404
+
+
+def test_recusa_telegram_id_repetido_com_409(cliente):
+    dados = {"nome": "Ana", "telegram_id": 42}
+    cliente.post("/usuarios", json=dados)
+
+    assert cliente.post("/usuarios", json=dados).status_code == 409

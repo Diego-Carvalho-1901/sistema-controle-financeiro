@@ -8,6 +8,7 @@ decimal de verdade e guardaria NUMERIC como número de ponto flutuante.
 from datetime import date
 
 from sqlalchemy import (
+    BigInteger,
     CheckConstraint,
     ForeignKey,
     MetaData,
@@ -48,6 +49,9 @@ class Usuario(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     nome: Mapped[str] = mapped_column(String(100))
+    # Id da conta no Telegram (issue [12]); vazio para quem não usa o bot.
+    # BigInteger porque os ids do Telegram passam do limite de 32 bits.
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, unique=True)
 
 
 class Categoria(Base):
