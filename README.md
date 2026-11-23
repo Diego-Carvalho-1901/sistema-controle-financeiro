@@ -360,6 +360,29 @@ data da venda, produto, categoria, quantidade vendida, preco unitario
 2026-09-05, Bolo de cenoura, Bolos, 4, 45.00
 ```
 
+### Extratos de banco
+
+O `importar.py` também lê o extrato CSV exportado pelo app do banco, e
+reconhece o formato pelo cabeçalho:
+
+| Banco | Cabeçalho | Valores |
+|---|---|---|
+| Nubank (conta) | `Data,Valor,Identificador,Descrição` | `-45.90` (ponto decimal) |
+| Inter (conta) | `Data Lançamento;Descrição;Valor;Saldo`, depois das linhas de apresentação | `-1.234,56` (vírgula decimal) |
+
+Valor negativo vira despesa, positivo vira receita, e a categoria é
+sugerida pelas palavras-chave (e pelas regras que o usuário ensinou no
+bot). Como o banco não diz se a conta é do negócio, use `--conta`:
+
+```bash
+python importar.py extrato-nubank.csv --usuario Ana --conta negocio
+```
+
+Os arquivos em `dados/extratos/` são **inventados**: nunca coloque um
+extrato real no repositório. Para um formato novo, basta criar outro
+`FormatoBanco` em `financeiro/extratos.py`, com um arquivo de exemplo
+anonimizado e testes.
+
 ## Como testar
 
 Os testes usam [pytest](https://docs.pytest.org/) e o linter é o
@@ -416,7 +439,7 @@ completa: [issues do repositório](https://github.com/Diego-Carvalho-1901/sistem
 | [15](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/14) | Categorização automática por palavras-chave | Concluído |
 | [16](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/15) | Resumo semanal automático e alerta de meta em 80% | Concluído |
 | [17](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/16) | Colocar no ar com PostgreSQL e backups | Preparado (falta o deploy) |
-| [18](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/17) | Importar extrato CSV de bancos reais | |
+| [18](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/17) | Importar extrato CSV de bancos reais | Em revisão |
 | [19](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/18) | Painel web simples com gráficos do mês | |
 | [20](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/19) | Métricas de uso | |
 
