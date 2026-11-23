@@ -10,6 +10,7 @@ from datetime import date
 from fastapi import APIRouter, FastAPI, HTTPException, Response, status
 from sqlalchemy import Engine
 
+from financeiro.api import resumos
 from financeiro.api.dependencias import Repositorio, exigir_usuario
 from financeiro.api.esquemas import (
     Conta,
@@ -118,6 +119,7 @@ def criar_app(engine: Engine | None = None) -> FastAPI:
     )
     app.state.fabrica_de_sessoes = criar_fabrica_de_sessoes(engine or criar_engine())
     app.include_router(rotas)
+    app.include_router(resumos.rotas)
     return app
 
 

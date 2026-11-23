@@ -162,3 +162,86 @@ def test_swagger_documenta_as_rotas(cliente):
 
     assert "/usuarios/{usuario_id}/lancamentos" in caminhos
     assert cliente.get("/docs").status_code == 200
+
+
+# --- Resumos (issue [10]) ---
+
+
+def resumo(cliente, usuario_id: int, nome: str, **params):
+    resposta = cliente.get(f"/usuarios/{usuario_id}/resumos/{nome}", params=params)
+    assert resposta.status_code == 200, resposta.text
+    return resposta.json()
+
+
+@pytest.fixture
+def com_dados(cliente, usuario) -> int:
+    venda = {"tipo": "venda", "conta": "negocio", "produto": "Bolo", "quantidade": 2}
+    for dados in [
+        despesa(valor="100.00", tipo="receita", categoria="salario"),
+        despesa(valor="30.00"),
+        despesa(valor="12.50", data="2026-10-03"),
+        despesa(valor="50.00", categoria="bolos", **venda),
+        despesa(valor="20.00", categoria="insumos", conta="negocio"),
+    ]:
+        criar(cliente, usuario, dados)
+    return usuario
+
+
+def test_resumo_mensal(cliente, com_dados):
+    assert resumo(cliente, com_dados, "mensal") == [
+        {
+            "ano": 2026,
+            "mes": 9,
+            "receitas": "100.00",
+            "despesas": "50.00",
+            "vendas": "50.00",
+            "saldo": "100.00",
+        },
+        {
+            "ano": 2026,
+            "mes": 10,
+            "receitas": "0.00",
+            "despesas": "12.50",
+            "vendas": "0.00",
+            "saldo": "-12.50",
+        },
+    ]
+
+
+def test_resumo_por_categoria_com_filtros(cliente, com_dados):
+    todas = resumo(cliente, com_dados, "categorias")
+    setembro_pessoal = resumo(
+        cliente,
+        com_dados,
+        "categorias",
+        conta="pessoal",
+        inicio="2026-09-01",
+        fim="2026-09-30",
+    )
+
+    assert todas == [
+        {"categoria": "mercado", "total": "42.50"},
+        {"categoria": "insumos", "total": "20.00"},
+    ]
+    assert setembro_pessoal == [{"categoria": "mercado", "total": "30.00"}]
+
+
+def test_resumo_negocio_e_pessoal(cliente, com_dados):
+    assert resumo(cliente, com_dados, "negocio") == {
+        "faturamento": "50.00",
+        "custos": "20.00",
+        "lucro": "30.00",
+        "margem": "60.00",
+    }
+    assert resumo(cliente, com_dados, "pessoal") == {"saldo": "57.50"}
+
+
+def test_resumo_de_usuario_inexistente_da_404(cliente):
+    assert cliente.get("/usuarios/999/resumos/negocio").status_code == 404
+
+
+def test_resumo_recusa_periodo_invertido(cliente, usuario):
+    params = {"inicio": "2026-10-01", "fim": "2026-09-01"}
+    resposta = cliente.get(f"/usuarios/{usuario}/resumos/mensal", params=params)
+
+    assert resposta.status_code == 422

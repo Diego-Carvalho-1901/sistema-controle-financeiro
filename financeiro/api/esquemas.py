@@ -90,3 +90,39 @@ class LancamentoSaida(LancamentoCampos):
             produto=lancamento.produto,
             quantidade=lancamento.quantidade,
         )
+
+
+# --- Resumos (issue [10]) ---
+
+
+class ResumoMesSaida(BaseModel):
+    """Totais de um mês."""
+
+    ano: int
+    mes: int = Field(ge=1, le=12)
+    receitas: Decimal
+    despesas: Decimal
+    vendas: Decimal
+    saldo: Decimal
+
+
+class CategoriaTotalSaida(BaseModel):
+    """Total gasto (ou recebido) numa categoria."""
+
+    categoria: str
+    total: Decimal
+
+
+class ResumoNegocioSaida(BaseModel):
+    """Faturamento, custos, lucro e margem (%) da conta negócio."""
+
+    faturamento: Decimal
+    custos: Decimal
+    lucro: Decimal
+    margem: Decimal
+
+
+class SaldoPessoalSaida(BaseModel):
+    """Receitas menos despesas da conta pessoal."""
+
+    saldo: Decimal
