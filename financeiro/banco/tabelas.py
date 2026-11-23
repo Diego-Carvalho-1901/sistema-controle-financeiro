@@ -5,15 +5,17 @@ Valores em dinheiro são guardados como inteiro em centavos (R$ 12,34 vira
 decimal de verdade e guardaria NUMERIC como número de ponto flutuante.
 """
 
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy import (
     BigInteger,
     CheckConstraint,
+    DateTime,
     ForeignKey,
     MetaData,
     String,
     UniqueConstraint,
+    func,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -147,5 +149,10 @@ class LancamentoTabela(Base):
     descricao: Mapped[str] = mapped_column(String(200))
     produto: Mapped[str | None] = mapped_column(String(100))
     quantidade: Mapped[int | None]
+    # Quando a linha foi gravada (em UTC), diferente de `data`, que é o dia
+    # do gasto. As métricas de uso (issue [20]) contam por esta coluna.
+    criado_em: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), index=True
+    )
 
     categoria: Mapped[Categoria] = relationship()
