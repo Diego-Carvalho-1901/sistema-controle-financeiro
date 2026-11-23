@@ -10,6 +10,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-financeiro}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-financeiro}
       POSTGRES_DB: ${POSTGRES_DB:-financeiro}
+    ports:
+      # Exposto no seu computador para rodar os testes contra o PostgreSQL
+      # (veja "Como testar" no README).
+      - "5432:5432"
     volumes:
       # Os dados sobrevivem a "docker compose down" (só somem com -v).
       - dados-banco:/var/lib/postgresql/data
