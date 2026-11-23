@@ -50,8 +50,8 @@ Saldo: R$ 1.550,00
 
 Maiores gastos
 • mercado: R$ 200,00
-• uber: R$ 50,00
-• farinha: R$ 30,00"""
+• transporte: R$ 50,00
+• insumos: R$ 30,00"""
 
 
 def test_resumo_do_mes(api):
@@ -141,3 +141,49 @@ def test_meta_sem_metas_explica_como_criar(api):
 )
 def test_meta_com_argumentos_errados_explica_o_uso(api, argumentos):
     assert meta(api, *argumentos) == comandos.USO_META
+
+
+# --- Categorização e /corrigir (issue [15]) ---
+
+
+def test_frase_ja_vem_com_a_categoria_sugerida(api):
+    resposta = responder_frase(api, TELEGRAM_ID, "Ana", "gastei 80 posto", HOJE)
+
+    assert resposta == (
+        "Anotado: gasto com posto [transporte], R$ 80,00 (pessoal). "
+        "Errou? Use /desfazer ou /corrigir <categoria>."
+    )
+
+
+def test_sem_sugestao_fica_a_primeira_palavra(api):
+    anotar(api, "gastei 50 presente da Bia")
+
+    assert "• presente: R$ 50,00" in resumo(api)
+
+
+def test_corrigir_troca_a_categoria_e_aprende_para_a_proxima(api):
+    anotar(api, "gastei 80 posto")
+
+    resposta = comandos.responder_corrigir(
+        api, TELEGRAM_ID, "Ana", ["Entregas"], hoje=HOJE
+    )
+    proxima = responder_frase(api, TELEGRAM_ID, "Ana", "gastei 60 posto", HOJE)
+
+    assert resposta == (
+        "Corrigido: gasto com posto [entregas], R$ 80,00 (pessoal).\n"
+        'Aprendi: "posto" agora é entregas.'
+    )
+    assert "[entregas]" in proxima
+    assert "• entregas: R$ 140,00" in resumo(api)
+
+
+def test_corrigir_sem_lancamentos(api):
+    resposta = comandos.responder_corrigir(api, TELEGRAM_ID, "Ana", ["lazer"])
+
+    assert resposta == "Não há nenhum lançamento para corrigir."
+
+
+def test_corrigir_sem_categoria_explica_o_uso(api):
+    assert comandos.responder_corrigir(api, TELEGRAM_ID, "Ana", []) == (
+        comandos.USO_CORRIGIR
+    )

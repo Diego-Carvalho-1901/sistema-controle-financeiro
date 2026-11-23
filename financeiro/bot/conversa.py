@@ -5,6 +5,7 @@ devolvem o texto da resposta. Não sabem que o Telegram existe, então os
 testes chamam essas funções direto.
 """
 
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 
@@ -29,6 +30,7 @@ Comandos:
 /desfazer - apaga o último lançamento
 /meta mercado 500 - define a meta mensal de gastos de uma categoria
 /meta - mostra as metas e quanto já foi gasto
+/corrigir transporte - troca a categoria do último lançamento e aprende
 /start - cadastra você (ou confirma o cadastro)
 /ajuda - mostra esta mensagem"""
 
@@ -70,8 +72,17 @@ def responder_frase(
     except FraseNaoEntendida as erro:
         return f"Não entendi: {erro}.\n\n{EXEMPLOS}"
     usuario = obter_ou_criar_usuario(api, telegram_id, nome)
+    if lido.tipo != "venda":
+        # Em vendas a categoria é o produto; nos outros casos, a API sugere
+        # uma pelas palavras-chave (issue [15]).
+        sugerida = api.sugerir_categoria(usuario["id"], lido.descricao)
+        if sugerida:
+            lido = replace(lido, categoria=sugerida)
     criado = api.criar_lancamento(usuario["id"], lido.para_json())
-    return f"Anotado: {descrever(criado, hoje)}. Errou? Use /desfazer."
+    dica = "Errou? Use /desfazer"
+    if lido.tipo != "venda":
+        dica += " ou /corrigir <categoria>"
+    return f"Anotado: {descrever(criado, hoje)}. {dica}."
 
 
 def descrever(lancamento: dict, hoje: date | None = None) -> str:
@@ -80,9 +91,9 @@ def descrever(lancamento: dict, hoje: date | None = None) -> str:
     if lancamento["tipo"] == "venda":
         o_que = f"venda de {lancamento['quantidade']} × {lancamento['produto']}"
     elif lancamento["tipo"] == "despesa":
-        o_que = f"gasto com {lancamento['descricao']}"
+        o_que = f"gasto com {lancamento['descricao']} [{lancamento['categoria']}]"
     else:
-        o_que = f"recebimento de {lancamento['descricao']}"
+        o_que = f"recebimento de {lancamento['descricao']} [{lancamento['categoria']}]"
     data = date.fromisoformat(lancamento["data"])
     quando = "" if data == (hoje or date.today()) else f" em {data:%d/%m}"
     valor = formatar_reais(Decimal(lancamento["valor"]))

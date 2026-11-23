@@ -1,4 +1,4 @@
-"""Comandos de consulta e correção: /resumo, /desfazer e /meta.
+"""Comandos de consulta e correção: /resumo, /desfazer, /meta e /corrigir.
 
 Como em conversa.py, são funções comuns que devolvem o texto da resposta.
 """
@@ -130,3 +130,31 @@ def _listar_metas(metas: list[dict]) -> str:
         percentual = Decimal(meta["percentual"])
         linhas.append(f"• {meta['categoria']}: {gasto} de {limite} ({percentual:.0f}%)")
     return "\n".join(linhas)
+
+
+USO_CORRIGIR = """Para trocar a categoria do último lançamento:
+/corrigir transporte
+
+Eu também aprendo: da próxima vez, a mesma palavra já vem nessa categoria."""
+
+
+def responder_corrigir(
+    api: ClienteAPI,
+    telegram_id: int,
+    nome: str,
+    argumentos: list[str],
+    hoje: date | None = None,
+) -> str:
+    """/corrigir categoria: corrige o último lançamento e aprende a regra."""
+    categoria = " ".join(argumentos).strip().lower()
+    if not categoria or len(categoria) > 50:
+        return USO_CORRIGIR
+    usuario = obter_ou_criar_usuario(api, telegram_id, nome)
+    correcao = api.corrigir_categoria_do_ultimo(usuario["id"], categoria)
+    if correcao is None:
+        return "Não há nenhum lançamento para corrigir."
+    texto = f"Corrigido: {descrever(correcao['lancamento'], hoje)}."
+    if correcao["palavra_aprendida"]:
+        palavra = correcao["palavra_aprendida"]
+        texto += f'\nAprendi: "{palavra}" agora é {categoria}.'
+    return texto

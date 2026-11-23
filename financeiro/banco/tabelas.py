@@ -89,6 +89,22 @@ class Meta(Base):
     categoria: Mapped[Categoria] = relationship()
 
 
+class RegraCategoria(Base):
+    """Palavra que o usuário ensinou a ligar a uma categoria (issue [15]).
+
+    Ex.: depois que a Ana corrige "posto" para "entregas", toda descrição
+    dela com "posto" é sugerida como "entregas".
+    """
+
+    __tablename__ = "regras_categoria"
+    __table_args__ = (UniqueConstraint("usuario_id", "palavra"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    palavra: Mapped[str] = mapped_column(String(50))
+    categoria: Mapped[str] = mapped_column(String(50))
+
+
 class LancamentoTabela(Base):
     """Linha da tabela de lançamentos.
 

@@ -1,4 +1,4 @@
-"""Testes de metas e do "desfazer" no repositório."""
+"""Testes de metas, regras de categoria e do "desfazer" no repositório."""
 
 from datetime import date
 from decimal import Decimal
@@ -91,3 +91,24 @@ def test_excluir_ultimo_nao_mexe_em_outro_usuario(repo, ana):
 
     assert repo.listar(ana) == []
     assert len(repo.listar(bia)) == 1
+
+
+# --- Regras de categoria (issue [15]) ---
+
+
+def test_aprende_e_troca_regras_de_categoria(repo, ana):
+    bia = repo.criar_usuario("Bia")
+    repo.aprender_regra(ana, "posto", "entregas")
+    repo.aprender_regra(ana, "presente", "presentes")
+    repo.aprender_regra(ana, "posto", "carro")  # corrigiu de novo
+    repo.aprender_regra(bia, "posto", "transporte")
+
+    assert repo.regras_de_categoria(ana) == {"posto": "carro", "presente": "presentes"}
+    assert repo.regras_de_categoria(bia) == {"posto": "transporte"}
+
+
+def test_ultimo_devolve_sem_apagar(repo, ana):
+    id_ = repo.adicionar(ana, despesa("2026-11-01", "20", "lazer"))
+
+    assert repo.ultimo(ana) == (id_, despesa("2026-11-01", "20", "lazer"))
+    assert len(repo.listar(ana)) == 1

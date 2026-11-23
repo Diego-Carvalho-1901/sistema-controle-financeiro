@@ -10,7 +10,13 @@ from decimal import Decimal
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from financeiro.banco.tabelas import Categoria, LancamentoTabela, Meta, Usuario
+from financeiro.banco.tabelas import (
+    Categoria,
+    LancamentoTabela,
+    Meta,
+    RegraCategoria,
+    Usuario,
+)
 from financeiro.modelos import Lancamento
 
 CENTAVOS_POR_REAL = 100
@@ -162,17 +168,10 @@ class RepositorioLancamentos:
         não tiver nenhum. É o "desfazer" do bot: vale a ordem de gravação,
         não a data do lançamento.
         """
-        consulta = select(func.max(LancamentoTabela.id)).where(
-            LancamentoTabela.usuario_id == usuario_id
-        )
-        ultimo_id = self.sessao.scalar(consulta)
-        if ultimo_id is None:
-            return None
-        linha = self.sessao.get(LancamentoTabela, ultimo_id)
-        apagado = _para_lancamento(linha)
-        self.sessao.delete(linha)
-        self.sessao.flush()
-        return ultimo_id, apagado
+        ultimo = self.ultimo(usuario_id)
+        if ultimo is not None:
+            self.excluir(usuario_id, ultimo[0])
+        return ultimo
 
     def definir_meta(self, usuario_id: int, categoria: str, valor: Decimal) -> None:
         """Cria ou troca a meta mensal de gastos de uma categoria."""
@@ -185,6 +184,39 @@ class RepositorioLancamentos:
             meta = Meta(usuario_id=usuario_id, categoria=categoria_)
             self.sessao.add(meta)
         meta.valor_centavos = reais_para_centavos(valor)
+        self.sessao.flush()
+
+    def ultimo(self, usuario_id: int) -> tuple[int, Lancamento] | None:
+        """(id, lançamento) do último lançamento gravado, ou None."""
+        consulta = select(func.max(LancamentoTabela.id)).where(
+            LancamentoTabela.usuario_id == usuario_id
+        )
+        ultimo_id = self.sessao.scalar(consulta)
+        if ultimo_id is None:
+            return None
+        return ultimo_id, self.buscar(usuario_id, ultimo_id)
+
+    def regras_de_categoria(self, usuario_id: int) -> dict[str, str]:
+        """Regras que o usuário ensinou: {palavra: categoria}."""
+        consulta = select(RegraCategoria.palavra, RegraCategoria.categoria).where(
+            RegraCategoria.usuario_id == usuario_id
+        )
+        return {
+            palavra: categoria for palavra, categoria in self.sessao.execute(consulta)
+        }
+
+    def aprender_regra(self, usuario_id: int, palavra: str, categoria: str) -> None:
+        """Grava (ou troca) a categoria ligada a uma palavra para o usuário."""
+        regra = self.sessao.scalars(
+            select(RegraCategoria).where(
+                RegraCategoria.usuario_id == usuario_id,
+                RegraCategoria.palavra == palavra,
+            )
+        ).first()
+        if regra is None:
+            regra = RegraCategoria(usuario_id=usuario_id, palavra=palavra)
+            self.sessao.add(regra)
+        regra.categoria = categoria
         self.sessao.flush()
 
     def _linha_do_usuario(
