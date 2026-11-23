@@ -3,7 +3,8 @@
 Rode com `python -m financeiro.bot`. Precisa da variável TELEGRAM_TOKEN
 (o token que o @BotFather entrega) e da API no ar (FINANCEIRO_API_URL,
 padrão http://127.0.0.1:8000). Se a API exigir chave, defina também
-FINANCEIRO_API_KEY com o mesmo valor usado nela.
+FINANCEIRO_API_KEY com o mesmo valor usado nela. ADMIN_TELEGRAM_ID libera
+o /stats para uma única pessoa.
 """
 
 import asyncio
@@ -115,6 +116,16 @@ async def comando_painel(update: Update, contexto: ContextTypes.DEFAULT_TYPE) ->
     )
 
 
+async def comando_stats(update: Update, contexto: ContextTypes.DEFAULT_TYPE) -> None:
+    await _responder(
+        update,
+        comandos.responder_stats,
+        _api(contexto),
+        update.effective_user.id,
+        contexto.application.bot_data.get("admin_id"),
+    )
+
+
 async def mensagem_de_texto(
     update: Update, contexto: ContextTypes.DEFAULT_TYPE
 ) -> None:
@@ -130,10 +141,16 @@ async def mensagem_de_texto(
     )
 
 
-def criar_aplicacao(token: str, api: ClienteAPI) -> Application:
-    """Monta o bot com os comandos registrados (não conecta ainda)."""
+def criar_aplicacao(
+    token: str, api: ClienteAPI, admin_id: int | None = None
+) -> Application:
+    """Monta o bot com os comandos registrados (não conecta ainda).
+
+    `admin_id` é o id do Telegram de quem pode usar o /stats.
+    """
     aplicacao = Application.builder().token(token).build()
     aplicacao.bot_data["api"] = api
+    aplicacao.bot_data["admin_id"] = admin_id
     aplicacao.add_handler(CommandHandler("start", comando_start))
     aplicacao.add_handler(CommandHandler("ajuda", comando_ajuda))
     aplicacao.add_handler(CommandHandler("resumo", comando_resumo))
@@ -141,6 +158,7 @@ def criar_aplicacao(token: str, api: ClienteAPI) -> Application:
     aplicacao.add_handler(CommandHandler("meta", comando_meta))
     aplicacao.add_handler(CommandHandler("corrigir", comando_corrigir))
     aplicacao.add_handler(CommandHandler("painel", comando_painel))
+    aplicacao.add_handler(CommandHandler("stats", comando_stats))
     aplicacao.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, mensagem_de_texto)
     )
@@ -161,4 +179,5 @@ def main() -> None:
         os.environ.get("FINANCEIRO_API_URL", URL_PADRAO),
         os.environ.get("FINANCEIRO_API_KEY"),
     )
-    criar_aplicacao(token, api).run_polling()
+    admin = os.environ.get("ADMIN_TELEGRAM_ID")
+    criar_aplicacao(token, api, int(admin) if admin else None).run_polling()

@@ -87,6 +87,7 @@ def test_aplicacao_registra_os_comandos(api):
         "meta",
         "corrigir",
         "painel",
+        "stats",
     } <= comandos
     assert any(isinstance(h, MessageHandler) for h in aplicacao.handlers[0])
 

@@ -111,6 +111,10 @@ class ClienteAPI:
         """Link de login do painel web, válido por 10 minutos (issue [19])."""
         return self._enviar("POST", f"/usuarios/{usuario_id}/painel/link").json()["url"]
 
+    def metricas(self, dia: date) -> dict:
+        """Métricas de uso do app (só para o administrador, issue [20])."""
+        return self._get("/metricas", {"dia": dia.isoformat()}).json()
+
     # --- detalhes de HTTP ---
 
     def _get(

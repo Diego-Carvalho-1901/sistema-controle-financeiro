@@ -171,3 +171,36 @@ def responder_painel(api: ClienteAPI, telegram_id: int, nome: str) -> str:
         f"{url}\n\n"
         "O link vale por 10 minutos e é só seu: não compartilhe."
     )
+
+
+COMANDO_RESTRITO = "Esse comando não está disponível."
+
+
+def responder_stats(
+    api: ClienteAPI,
+    telegram_id: int,
+    admin_id: int | None,
+    hoje: date | None = None,
+) -> str:
+    """/stats: métricas de uso, só para o administrador (ADMIN_TELEGRAM_ID)."""
+    if admin_id is None or telegram_id != admin_id:
+        return COMANDO_RESTRITO
+    dados = api.metricas(hoje or date.today())
+    linhas = [
+        "Métricas de uso",
+        "",
+        f"Usuários: {dados['usuarios']} ({dados['usuarios_com_telegram']} no Telegram)",
+        f"Lançamentos: {dados['lancamentos']}",
+        f"Média por usuário que lança: {dados['media_por_usuario']:.1f}".replace(
+            ".", ","
+        ),
+        f"Máximo de um usuário: {dados['maximo_por_usuario']}",
+        "",
+        "Usuários ativos por semana",
+    ]
+    linhas += [
+        f"• {date.fromisoformat(s['inicio']):%d/%m}: {s['usuarios_ativos']}"
+        f" ({s['lancamentos']} lançamentos)"
+        for s in dados["semanas"]
+    ]
+    return "\n".join(linhas)
