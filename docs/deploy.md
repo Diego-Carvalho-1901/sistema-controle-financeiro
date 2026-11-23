@@ -47,6 +47,8 @@ PaaS) rodando os dois containers.
 | `FINANCEIRO_API_KEY` | API e bot | chave compartilhada; gere com `python -c "import secrets; print(secrets.token_urlsafe(32))"` |
 | `TELEGRAM_TOKEN` | bot | token do bot de **produção** no @BotFather (use outro bot para testes) |
 | `FINANCEIRO_API_URL` | bot | endereço da API; no compose de produção já é `http://api:8000` |
+| `FINANCEIRO_SEGREDO` | API | assina os links e cookies do painel; gere como a chave da API |
+| `FINANCEIRO_PAINEL_URL` | API | endereço público do painel com HTTPS, usado nos links do `/painel` |
 
 Elas ficam **só** no servidor (no `.env.prod`) ou no painel de segredos do
 PaaS, nunca no git. O `.gitignore` já ignora `.env` e `.env.prod`.
@@ -87,6 +89,15 @@ Num PaaS, os passos 2 a 4 viram: criar dois serviços a partir do
 Dockerfile (a API com o comando padrão e o bot com
 `python -m financeiro.bot`), cadastrar as variáveis no painel e apontar
 `FINANCEIRO_API_URL` do bot para o endereço interno da API.
+
+## Painel web com HTTPS
+
+O painel roda na mesma API, em `/painel/`. Para abri-lo de fora do
+servidor, coloque um proxy reverso com HTTPS (Caddy, Nginx com
+Let's Encrypt, ou o domínio do próprio PaaS) apontando para a porta 8000.
+Depois, preencha `FINANCEIRO_PAINEL_URL` com esse endereço. O compose de
+produção já liga o `FINANCEIRO_COOKIE_SEGURO=1`, para o cookie de sessão
+só trafegar por HTTPS.
 
 ## Backup diário
 

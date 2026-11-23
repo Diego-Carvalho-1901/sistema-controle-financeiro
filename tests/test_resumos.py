@@ -9,6 +9,7 @@ from financeiro.banco.conexao import criar_fabrica_de_sessoes
 from financeiro.banco.repositorio import RepositorioLancamentos
 from financeiro.banco.resumos import (
     ResumoMes,
+    lucro_por_mes,
     resumo_negocio,
     resumo_por_categoria,
     resumo_por_mes,
@@ -148,3 +149,12 @@ def test_sql_e_python_chegam_ao_mesmo_resultado(sessao, usuario):
     assert dict(resumo_por_categoria(sessao, usuario)) == somar_por_categoria(
         lancamentos, "despesa"
     )
+
+
+def test_lucro_por_mes_so_conta_o_negocio(sessao, usuario):
+    meses = lucro_por_mes(sessao, usuario)
+
+    assert [(ano, mes, r.faturamento, r.custos, r.lucro) for ano, mes, r in meses] == [
+        (2026, 9, Decimal(75), Decimal(40), Decimal(35)),
+        (2026, 10, Decimal(200), Decimal("15.25"), Decimal("184.75")),
+    ]

@@ -123,7 +123,7 @@ falam com ela, e ela usa as mesmas regras de negócio que o relatório usa hoje.
 | Linguagem | Python 3.12, só biblioteca padrão (`csv`, `decimal`, `datetime`, `argparse`, `dataclasses`) | |
 | Qualidade | pytest, ruff (lint e formatação), GitHub Actions | |
 | Dados | Arquivos CSV | SQLAlchemy, Alembic, SQLite (dev) e PostgreSQL (produção) |
-| Interfaces | Linha de comando, API REST com FastAPI, bot de Telegram (python-telegram-bot) | Painel web |
+| Interfaces | Linha de comando, API REST com FastAPI, bot de Telegram (python-telegram-bot), painel web (HTML + Chart.js) | |
 | Infra | Docker e docker-compose (API + PostgreSQL) | Deploy com backups |
 
 ## Como rodar
@@ -329,6 +329,26 @@ ela**, e essa regra vence o dicionário nos próximos lançamentos.
   uma vez por mês por categoria (a tabela `alertas_meta` guarda isso). Os testes (`tests/test_bot.py`) exercitam a lógica do bot contra
 a API de verdade, mas sem chamar o Telegram.
 
+### Painel web
+
+Em <http://127.0.0.1:8000/painel/> ficam os cartões do mês (faturamento,
+custos, lucro e saldo pessoal), o gráfico de gastos por categoria e a
+evolução do lucro nos últimos 12 meses.
+
+![Painel com os cartões do mês e os gráficos](docs/painel.png)
+
+**Login sem senha:** mande `/painel` para o bot, e ele responde com um link
+que vale por 10 minutos. Ao abrir o link, o navegador recebe um cookie de
+sessão (assinado com HMAC e `HttpOnly`) que dura 7 dias. Sem o bot, dá
+para gerar o link pelo terminal:
+
+```bash
+docker compose exec api python -m financeiro.painel.link --usuario Ana
+```
+
+O navegador só desenha: lucro, margem e totais vêm prontos da API
+(`/painel/api/...`), calculados com SQL.
+
 ### Em produção
 
 O guia [docs/deploy.md](docs/deploy.md) explica como escolher a
@@ -439,8 +459,8 @@ completa: [issues do repositório](https://github.com/Diego-Carvalho-1901/sistem
 | [15](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/14) | Categorização automática por palavras-chave | Concluído |
 | [16](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/15) | Resumo semanal automático e alerta de meta em 80% | Concluído |
 | [17](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/16) | Colocar no ar com PostgreSQL e backups | Preparado (falta o deploy) |
-| [18](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/17) | Importar extrato CSV de bancos reais | Em revisão |
-| [19](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/18) | Painel web simples com gráficos do mês | |
+| [18](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/17) | Importar extrato CSV de bancos reais | Concluído |
+| [19](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/18) | Painel web simples com gráficos do mês | Em revisão |
 | [20](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/19) | Métricas de uso | |
 
 ## Projeto relacionado

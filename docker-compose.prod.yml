@@ -12,6 +12,10 @@ services:
     environment:
       FINANCEIRO_DB_URL: ${FINANCEIRO_DB_URL:?defina FINANCEIRO_DB_URL no .env.prod}
       FINANCEIRO_API_KEY: ${FINANCEIRO_API_KEY:?defina FINANCEIRO_API_KEY no .env.prod}
+      FINANCEIRO_SEGREDO: ${FINANCEIRO_SEGREDO:?defina FINANCEIRO_SEGREDO no .env.prod}
+      # Endereço público do painel (com HTTPS), usado nos links do /painel.
+      FINANCEIRO_PAINEL_URL: ${FINANCEIRO_PAINEL_URL:-}
+      FINANCEIRO_COOKIE_SEGURO: "1"
     ports:
       # Só o próprio servidor acessa a API. Para expor na internet, coloque
       # um proxy com HTTPS na frente (veja docs/deploy.md).

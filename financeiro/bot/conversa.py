@@ -31,6 +31,7 @@ Comandos:
 /meta mercado 500 - define a meta mensal de gastos de uma categoria
 /meta - mostra as metas e quanto já foi gasto
 /corrigir transporte - troca a categoria do último lançamento e aprende
+/painel - link para ver os gráficos no navegador
 /start - cadastra você (ou confirma o cadastro)
 /ajuda - mostra esta mensagem"""
 
