@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel financeiro</title>
+  <link rel="stylesheet" href="/painel/estatico/painel.css">
+  <!-- Chart.js desenha os gráficos; a versão fica fixa para não mudar sozinha. -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="/painel/estatico/painel.js" defer></script>
+</head>
+<body>
+  <header>
+    <h1>Painel financeiro</h1>
+    <div id="usuario" hidden>
+      <span id="nome"></span>
+      <form method="post" action="/painel/sair"><button type="submit">Sair</button></form>
+    </div>
+  </header>
+
+  <main>
+    <section id="login" hidden>
+      <h2>Entre pelo bot</h2>
+      <p>Mande <code>/painel</code> para o bot no Telegram e abra o link que ele responder.
+         O link vale por 10 minutos.</p>
+    </section>
+
+    <section id="conteudo" hidden>
+      <label class="mes">Mês <input type="month" id="mes"></label>
+
+      <div class="cartoes">
+        <article><h3>Faturamento</h3><p id="faturamento">–</p></article>
+        <article><h3>Custos</h3><p id="custos">–</p></article>
+        <article><h3>Lucro do negócio</h3><p id="lucro">–</p><small id="margem"></small></article>
+        <article><h3>Saldo pessoal</h3><p id="saldo">–</p></article>
+      </div>
+
+      <div class="graficos">
+        <figure>
+          <figcaption>Gastos por categoria no mês</figcaption>
+          <canvas id="grafico-categorias" aria-label="Gastos por categoria"></canvas>
+          <p class="vazio" id="sem-gastos" hidden>Nenhum gasto neste mês.</p>
+        </figure>
+        <figure>
+          <figcaption>Lucro do negócio nos últimos 12 meses</figcaption>
+          <canvas id="grafico-lucro" aria-label="Evolução do lucro"></canvas>
+        </figure>
+      </div>
+    </section>
+  </main>
+</body>
+</html>
