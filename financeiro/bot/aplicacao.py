@@ -154,6 +154,9 @@ def main() -> None:
     if not token:
         raise SystemExit("Defina a variável TELEGRAM_TOKEN com o token do @BotFather.")
     logging.basicConfig(level=logging.INFO)
+    # O httpx registra cada requisição em INFO, e a URL do Telegram contém o
+    # token do bot. Em WARNING, o token não vaza para os logs.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     api = ClienteAPI.conectar(
         os.environ.get("FINANCEIRO_API_URL", URL_PADRAO),
         os.environ.get("FINANCEIRO_API_KEY"),
