@@ -123,7 +123,7 @@ falam com ela, e ela usa as mesmas regras de negócio que o relatório usa hoje.
 | Linguagem | Python 3.12, só biblioteca padrão (`csv`, `decimal`, `datetime`, `argparse`, `dataclasses`) | |
 | Qualidade | pytest, ruff (lint e formatação), GitHub Actions | |
 | Dados | Arquivos CSV | SQLAlchemy, Alembic, SQLite (dev) e PostgreSQL (produção) |
-| Interfaces | Linha de comando, API REST com FastAPI | Bot de Telegram, painel web |
+| Interfaces | Linha de comando, API REST com FastAPI, bot de Telegram (python-telegram-bot) | Painel web |
 | Infra | Docker e docker-compose (API + PostgreSQL) | Deploy com backups |
 
 ## Como rodar
@@ -261,6 +261,27 @@ docker compose cp dados/movimentacoes.csv api:/tmp/
 docker compose exec api python importar.py /tmp/movimentacoes.csv --usuario Ana
 ```
 
+### Bot de Telegram
+
+O bot conversa com a API (não acessa o banco direto). Para rodar o seu:
+
+1. No Telegram, fale com o [@BotFather](https://t.me/BotFather), use
+   `/newbot` e guarde o token que ele devolve. **O token é um segredo:**
+   nunca coloque no código nem num commit.
+2. Copie o `.env.example` para `.env` e preencha `TELEGRAM_TOKEN`.
+3. Suba tudo, incluindo o bot:
+
+```bash
+docker compose --profile bot up --build
+```
+
+Sem Docker, com a API já rodando: `TELEGRAM_TOKEN=... python -m financeiro.bot`.
+
+No Telegram, mande `/start` para o seu bot: ele cadastra você (ligando a
+conta do Telegram ao usuário pela coluna `telegram_id`) e explica os
+comandos. Os testes (`tests/test_bot.py`) exercitam a lógica do bot contra
+a API de verdade, mas sem chamar o Telegram.
+
 ## Formatos de CSV
 
 O formato é reconhecido pela primeira linha (cabeçalho). Arquivos em UTF-8.
@@ -333,8 +354,8 @@ completa: [issues do repositório](https://github.com/Diego-Carvalho-1901/sistem
 | [08](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/7) | Importador de CSV que grava no banco | Concluído |
 | [09](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/8) | API FastAPI com CRUD de lançamentos | Concluído |
 | [10](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/9) | Endpoints de resumo com agregações em SQL | Concluído |
-| [11](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/10) | Testes da API, Dockerfile e docker-compose com PostgreSQL | Em revisão |
-| [12](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/11) | Bot de Telegram básico com `/start` | |
+| [11](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/10) | Testes da API, Dockerfile e docker-compose com PostgreSQL | Concluído |
+| [12](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/11) | Bot de Telegram básico com `/start` | Em revisão |
 | [13](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/12) | Leitor de frases livres | |
 | [14](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/13) | Comandos `/resumo`, `/desfazer` e `/meta` | |
 | [15](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/14) | Categorização automática por palavras-chave | |
