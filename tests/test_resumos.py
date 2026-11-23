@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import pytest
 
-from financeiro.banco.conexao import criar_engine, criar_fabrica_de_sessoes
+from financeiro.banco.conexao import criar_fabrica_de_sessoes
 from financeiro.banco.repositorio import RepositorioLancamentos
 from financeiro.banco.resumos import (
     ResumoMes,
@@ -14,7 +14,6 @@ from financeiro.banco.resumos import (
     resumo_por_mes,
     saldo_pessoal,
 )
-from financeiro.banco.tabelas import Base
 from financeiro.calculos import (
     calcular_saldo_pessoal,
     resumir_negocio,
@@ -57,12 +56,9 @@ DADOS = [
 
 
 @pytest.fixture
-def sessao():
-    engine = criar_engine("sqlite://")
-    Base.metadata.create_all(engine)
+def sessao(engine):
     with criar_fabrica_de_sessoes(engine)() as sessao:
         yield sessao
-    engine.dispose()
 
 
 @pytest.fixture

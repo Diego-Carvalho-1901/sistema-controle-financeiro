@@ -7,19 +7,14 @@ from fastapi.testclient import TestClient
 
 from financeiro.api.app import criar_app
 from financeiro.api.esquemas import Conta, Tipo
-from financeiro.banco.conexao import criar_engine
-from financeiro.banco.tabelas import Base
 from financeiro.modelos import CONTAS, TIPOS
 
 
 @pytest.fixture
-def cliente(tmp_path):
+def cliente(engine):
     """Cliente HTTP falando com uma API ligada a um banco novo e vazio."""
-    engine = criar_engine(f"sqlite:///{tmp_path / 'teste.db'}")
-    Base.metadata.create_all(engine)
     with TestClient(criar_app(engine)) as cliente:
         yield cliente
-    engine.dispose()
 
 
 @pytest.fixture
