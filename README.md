@@ -329,6 +329,22 @@ ela**, e essa regra vence o dicionário nos próximos lançamentos.
   uma vez por mês por categoria (a tabela `alertas_meta` guarda isso). Os testes (`tests/test_bot.py`) exercitam a lógica do bot contra
 a API de verdade, mas sem chamar o Telegram.
 
+### Métricas de uso
+
+Para saber se o app está sendo usado de verdade:
+
+- `GET /metricas` (com a chave da API) devolve o total de usuários e de
+  lançamentos, a média e o máximo de lançamentos por usuário e os
+  **usuários ativos por semana** (quem gravou algo na semana, contado pela
+  coluna `criado_em`, e não pela data do gasto);
+- `/stats` no bot mostra o mesmo resumo, mas só para o id do Telegram
+  configurado em `ADMIN_TELEGRAM_ID`. Para qualquer outra pessoa, o
+  comando não existe.
+
+As métricas são só contagens: nenhuma traz nome, descrição ou valor de
+alguém. O bot também não guarda o texto das mensagens (só o lançamento que
+saiu delas) e não registra nos logs a URL do Telegram, que contém o token.
+
 ### Painel web
 
 Em <http://127.0.0.1:8000/painel/> ficam os cartões do mês (faturamento,
@@ -460,8 +476,8 @@ completa: [issues do repositório](https://github.com/Diego-Carvalho-1901/sistem
 | [16](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/15) | Resumo semanal automático e alerta de meta em 80% | Concluído |
 | [17](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/16) | Colocar no ar com PostgreSQL e backups | Preparado (falta o deploy) |
 | [18](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/17) | Importar extrato CSV de bancos reais | Concluído |
-| [19](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/18) | Painel web simples com gráficos do mês | Em revisão |
-| [20](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/19) | Métricas de uso | |
+| [19](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/18) | Painel web simples com gráficos do mês | Concluído |
+| [20](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/19) | Métricas de uso | Em revisão |
 
 ## Projeto relacionado
 
