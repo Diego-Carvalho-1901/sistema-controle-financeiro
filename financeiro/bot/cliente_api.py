@@ -75,6 +75,23 @@ class ClienteAPI:
         rota = f"/usuarios/{usuario_id}/metas"
         return self._get(rota, {"dia": dia.isoformat()}).json()
 
+    def sugerir_categoria(self, usuario_id: int, descricao: str) -> str | None:
+        """Categoria sugerida pela API para a descrição (ou None)."""
+        rota = f"/usuarios/{usuario_id}/categorias/sugestao"
+        return self._get(rota, {"descricao": descricao}).json()["categoria"]
+
+    def corrigir_categoria_do_ultimo(self, usuario_id: int, categoria: str):
+        """Troca a categoria do último lançamento; None se não houver nenhum."""
+        rota = f"/usuarios/{usuario_id}/lancamentos/ultimo/categoria"
+        try:
+            resposta = self.http.put(rota, json={"categoria": categoria})
+        except httpx.HTTPError as erro:
+            raise ErroAPI(f"a API não respondeu: {erro}") from erro
+        if resposta.status_code == 404:
+            return None
+        _conferir(resposta)
+        return resposta.json()
+
     # --- detalhes de HTTP ---
 
     def _get(

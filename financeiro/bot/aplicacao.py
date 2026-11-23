@@ -91,6 +91,18 @@ async def comando_meta(update: Update, contexto: ContextTypes.DEFAULT_TYPE) -> N
     )
 
 
+async def comando_corrigir(update: Update, contexto: ContextTypes.DEFAULT_TYPE) -> None:
+    usuario = update.effective_user
+    await _responder(
+        update,
+        comandos.responder_corrigir,
+        _api(contexto),
+        usuario.id,
+        usuario.first_name,
+        contexto.args or [],
+    )
+
+
 async def mensagem_de_texto(
     update: Update, contexto: ContextTypes.DEFAULT_TYPE
 ) -> None:
@@ -115,6 +127,7 @@ def criar_aplicacao(token: str, api: ClienteAPI) -> Application:
     aplicacao.add_handler(CommandHandler("resumo", comando_resumo))
     aplicacao.add_handler(CommandHandler("desfazer", comando_desfazer))
     aplicacao.add_handler(CommandHandler("meta", comando_meta))
+    aplicacao.add_handler(CommandHandler("corrigir", comando_corrigir))
     aplicacao.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, mensagem_de_texto)
     )
