@@ -348,3 +348,35 @@ def test_corrigir_sem_lancamentos_da_404(cliente, usuario):
     rota = f"/usuarios/{usuario}/lancamentos/ultimo/categoria"
 
     assert cliente.put(rota, json={"categoria": "x"}).status_code == 404
+
+
+# --- Alertas de meta e lista de usuários (issue [16]) ---
+
+
+def alertas(cliente, usuario_id: int, dia: str) -> list[str]:
+    rota = f"/usuarios/{usuario_id}/metas/alertas"
+    resposta = cliente.post(rota, params={"dia": dia})
+    assert resposta.status_code == 200, resposta.text
+    return [meta["categoria"] for meta in resposta.json()]
+
+
+def test_alerta_de_meta_sai_uma_vez_por_mes(cliente, usuario):
+    cliente.put(f"/usuarios/{usuario}/metas/mercado", json={"valor": "100"})
+    criar(cliente, usuario, despesa(valor="50.00", data="2026-09-05"))
+
+    assert alertas(cliente, usuario, "2026-09-05") == []  # 50%
+
+    criar(cliente, usuario, despesa(valor="30.00", data="2026-09-10"))
+    assert alertas(cliente, usuario, "2026-09-10") == ["mercado"]  # 80%
+
+    criar(cliente, usuario, despesa(valor="40.00", data="2026-09-12"))
+    assert alertas(cliente, usuario, "2026-09-12") == []  # já avisou
+
+    criar(cliente, usuario, despesa(valor="90.00", data="2026-10-01"))
+    assert alertas(cliente, usuario, "2026-10-01") == ["mercado"]  # mês novo
+
+
+def test_lista_so_usuarios_com_telegram(cliente, usuario):
+    cliente.post("/usuarios", json={"nome": "Bia", "telegram_id": 99})
+
+    assert [u["nome"] for u in cliente.get("/usuarios").json()] == ["Bia"]

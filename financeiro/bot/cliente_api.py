@@ -92,6 +92,15 @@ class ClienteAPI:
         _conferir(resposta)
         return resposta.json()
 
+    def gerar_alertas(self, usuario_id: int, dia: date) -> list[dict]:
+        """Metas que acabaram de passar de 80% no mês de `dia` (issue [16])."""
+        rota = f"/usuarios/{usuario_id}/metas/alertas"
+        return self._enviar_com_params("POST", rota, {"dia": dia.isoformat()}).json()
+
+    def listar_usuarios(self) -> list[dict]:
+        """Usuários ligados a uma conta do Telegram."""
+        return self._get("/usuarios").json()
+
     # --- detalhes de HTTP ---
 
     def _get(
@@ -107,8 +116,17 @@ class ClienteAPI:
         return resposta
 
     def _enviar(self, metodo: str, rota: str, dados: dict | None = None):
+        return self._enviar_com_params(metodo, rota, None, dados)
+
+    def _enviar_com_params(
+        self,
+        metodo: str,
+        rota: str,
+        params: dict | None,
+        dados: dict | None = None,
+    ) -> httpx.Response:
         try:
-            resposta = self.http.request(metodo, rota, json=dados)
+            resposta = self.http.request(metodo, rota, params=params, json=dados)
         except httpx.HTTPError as erro:
             raise ErroAPI(f"a API não respondeu: {erro}") from erro
         _conferir(resposta)

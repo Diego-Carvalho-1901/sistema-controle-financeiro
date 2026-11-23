@@ -14,6 +14,8 @@ from financeiro.periodos import mes_de, semana_de
 # Quantas categorias aparecem em "Maiores gastos".
 MAIORES_GASTOS = 3
 
+SEM_LANCAMENTOS = "Nenhum lançamento nesse período."
+
 USO_META = """Para definir uma meta mensal de gastos:
 /meta mercado 500
 
@@ -56,7 +58,7 @@ def montar_resumo(
     custos = Decimal(negocio["custos"])
     saldo = Decimal(pessoal["saldo"])
     if not gastos and faturamento == custos == saldo == 0:
-        return f"{cabecalho}\n\nNenhum lançamento nesse período."
+        return f"{cabecalho}\n\n{SEM_LANCAMENTOS}"
 
     lucro = formatar_reais(Decimal(negocio["lucro"]))
     margem = Decimal(negocio["margem"])

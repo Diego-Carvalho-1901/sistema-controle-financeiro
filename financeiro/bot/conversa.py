@@ -82,7 +82,22 @@ def responder_frase(
     dica = "Errou? Use /desfazer"
     if lido.tipo != "venda":
         dica += " ou /corrigir <categoria>"
-    return f"Anotado: {descrever(criado, hoje)}. {dica}."
+    texto = f"Anotado: {descrever(criado, hoje)}. {dica}."
+    if lido.tipo == "despesa":
+        alertas = api.gerar_alertas(usuario["id"], lido.data)
+        texto += "".join(f"\n\n{texto_do_alerta(alerta)}" for alerta in alertas)
+    return texto
+
+
+def texto_do_alerta(meta: dict) -> str:
+    """Aviso de que uma categoria passou de 80% da meta do mês."""
+    gasto = formatar_reais(Decimal(meta["gasto"]))
+    limite = formatar_reais(Decimal(meta["meta"]))
+    percentual = Decimal(meta["percentual"])
+    return (
+        f"Atenção: você já usou {percentual:.0f}% da meta de {meta['categoria']}"
+        f" este mês ({gasto} de {limite})."
+    )
 
 
 def descrever(lancamento: dict, hoje: date | None = None) -> str:

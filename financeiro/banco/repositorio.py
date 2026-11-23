@@ -11,6 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from financeiro.banco.tabelas import (
+    AlertaMeta,
     Categoria,
     LancamentoTabela,
     Meta,
@@ -195,6 +196,36 @@ class RepositorioLancamentos:
         if ultimo_id is None:
             return None
         return ultimo_id, self.buscar(usuario_id, ultimo_id)
+
+    def categorias_alertadas(self, usuario_id: int, ano: int, mes: int) -> set[str]:
+        """Categorias que já receberam alerta de meta nesse mês."""
+        consulta = (
+            select(Categoria.nome)
+            .join(AlertaMeta, AlertaMeta.categoria_id == Categoria.id)
+            .where(
+                AlertaMeta.usuario_id == usuario_id,
+                AlertaMeta.ano == ano,
+                AlertaMeta.mes == mes,
+            )
+        )
+        return set(self.sessao.scalars(consulta))
+
+    def registrar_alerta(
+        self, usuario_id: int, categoria: str, ano: int, mes: int
+    ) -> None:
+        """Anota que o alerta da categoria já saiu nesse mês."""
+        categoria_ = self._obter_ou_criar_categoria(usuario_id, categoria)
+        self.sessao.add(
+            AlertaMeta(usuario_id=usuario_id, categoria=categoria_, ano=ano, mes=mes)
+        )
+        self.sessao.flush()
+
+    def listar_usuarios_do_telegram(self) -> list[Usuario]:
+        """Usuários ligados a uma conta do Telegram (para o resumo semanal)."""
+        consulta = (
+            select(Usuario).where(Usuario.telegram_id.is_not(None)).order_by(Usuario.id)
+        )
+        return list(self.sessao.scalars(consulta))
 
     def regras_de_categoria(self, usuario_id: int) -> dict[str, str]:
         """Regras que o usuário ensinou: {palavra: categoria}."""

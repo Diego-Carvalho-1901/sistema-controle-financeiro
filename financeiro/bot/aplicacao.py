@@ -18,7 +18,7 @@ from telegram.ext import (
     filters,
 )
 
-from financeiro.bot import comandos, conversa
+from financeiro.bot import agenda, comandos, conversa
 from financeiro.bot.cliente_api import URL_PADRAO, ClienteAPI, ErroAPI
 
 log = logging.getLogger(__name__)
@@ -131,6 +131,7 @@ def criar_aplicacao(token: str, api: ClienteAPI) -> Application:
     aplicacao.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, mensagem_de_texto)
     )
+    agenda.agendar(aplicacao)
     return aplicacao
 
 
