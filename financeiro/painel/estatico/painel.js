@@ -34,6 +34,7 @@ async function carregarMes(valorDoCampo) {
 
   const categorias = dados.gastos_por_categoria;
   document.getElementById("sem-gastos").hidden = categorias.length > 0;
+  document.getElementById("grafico-categorias").hidden = categorias.length === 0;
   desenhar("grafico-categorias", {
     type: "bar",
     data: {
