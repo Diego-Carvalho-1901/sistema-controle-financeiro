@@ -2,7 +2,8 @@
 
 Rode com `python -m financeiro.bot`. Precisa da variável TELEGRAM_TOKEN
 (o token que o @BotFather entrega) e da API no ar (FINANCEIRO_API_URL,
-padrão http://127.0.0.1:8000).
+padrão http://127.0.0.1:8000). Se a API exigir chave, defina também
+FINANCEIRO_API_KEY com o mesmo valor usado nela.
 """
 
 import asyncio
@@ -141,5 +142,8 @@ def main() -> None:
     if not token:
         raise SystemExit("Defina a variável TELEGRAM_TOKEN com o token do @BotFather.")
     logging.basicConfig(level=logging.INFO)
-    api = ClienteAPI.conectar(os.environ.get("FINANCEIRO_API_URL", URL_PADRAO))
+    api = ClienteAPI.conectar(
+        os.environ.get("FINANCEIRO_API_URL", URL_PADRAO),
+        os.environ.get("FINANCEIRO_API_KEY"),
+    )
     criar_aplicacao(token, api).run_polling()

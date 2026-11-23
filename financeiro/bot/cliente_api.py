@@ -28,9 +28,15 @@ class ClienteAPI:
         self.http = http
 
     @classmethod
-    def conectar(cls, url_base: str = URL_PADRAO) -> "ClienteAPI":
-        """Cria o cliente para a API em `url_base`."""
-        return cls(httpx.Client(base_url=url_base, timeout=10))
+    def conectar(
+        cls, url_base: str = URL_PADRAO, chave_api: str | None = None
+    ) -> "ClienteAPI":
+        """Cria o cliente para a API em `url_base`.
+
+        Com `chave_api`, toda requisição leva o cabeçalho X-API-Key.
+        """
+        cabecalhos = {"X-API-Key": chave_api} if chave_api else {}
+        return cls(httpx.Client(base_url=url_base, timeout=10, headers=cabecalhos))
 
     def buscar_usuario_do_telegram(self, telegram_id: int) -> dict | None:
         """Devolve o usuário ligado a essa conta do Telegram, ou None."""

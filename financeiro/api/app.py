@@ -5,13 +5,26 @@ Ainda não há login: o usuário vem no caminho da URL
 futura; até lá, a API é para uso local.
 """
 
+import os
 from datetime import date
 
-from fastapi import APIRouter, FastAPI, HTTPException, Response, status
-from sqlalchemy import Engine
+from fastapi import (
+    APIRouter,
+    Depends,
+    FastAPI,
+    HTTPException,
+    Request,
+    Response,
+    status,
+)
+from sqlalchemy import Engine, text
 
 from financeiro.api import categorias, metas, resumos
-from financeiro.api.dependencias import Repositorio, exigir_usuario
+from financeiro.api.dependencias import (
+    Repositorio,
+    exigir_chave_api,
+    exigir_usuario,
+)
 from financeiro.api.esquemas import (
     Conta,
     LancamentoEntrada,
@@ -148,21 +161,33 @@ def excluir_lancamento(
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-def criar_app(engine: Engine | None = None) -> FastAPI:
+def verificar_saude(request: Request) -> dict:
+    """Responde se a API e o banco estão no ar (para a hospedagem monitorar).
+
+    Fica fora da chave da API e não devolve nenhum dado de usuário.
+    """
+    with request.app.state.fabrica_de_sessoes() as sessao:
+        sessao.execute(text("SELECT 1"))
+    return {"status": "ok"}
+
+
+def criar_app(engine: Engine | None = None, chave_api: str | None = None) -> FastAPI:
     """Cria a aplicação ligada ao banco do `engine` (ou ao padrão).
 
     Receber o engine por parâmetro deixa os testes usarem um banco
-    temporário sem mexer no financeiro.db.
+    temporário sem mexer no financeiro.db. A `chave_api` (ou a variável
+    FINANCEIRO_API_KEY) protege todas as rotas, menos a /saude.
     """
     app = FastAPI(
         title="Controle financeiro para autônomos",
         description="Lançamentos de receitas, despesas e vendas por usuário.",
     )
     app.state.fabrica_de_sessoes = criar_fabrica_de_sessoes(engine or criar_engine())
-    app.include_router(rotas)
-    app.include_router(resumos.rotas)
-    app.include_router(metas.rotas)
-    app.include_router(categorias.rotas)
+    app.state.chave_api = chave_api or os.environ.get("FINANCEIRO_API_KEY") or None
+    protegidas = [Depends(exigir_chave_api)]
+    for grupo in (rotas, resumos.rotas, metas.rotas, categorias.rotas):
+        app.include_router(grupo, dependencies=protegidas)
+    app.add_api_route("/saude", verificar_saude, methods=["GET"], tags=["saúde"])
     return app
 
 
