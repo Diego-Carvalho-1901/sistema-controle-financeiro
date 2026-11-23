@@ -79,7 +79,7 @@ def test_aplicacao_registra_os_comandos(api):
         if isinstance(handler, CommandHandler)
         for comando in handler.commands
     }
-    assert {"start", "ajuda"} <= comandos
+    assert {"start", "ajuda", "resumo", "desfazer", "meta"} <= comandos
     assert any(isinstance(h, MessageHandler) for h in aplicacao.handlers[0])
 
 
@@ -103,7 +103,9 @@ def test_frase_vira_lancamento_na_api(api):
         api, TELEGRAM_ID, "Ana", "vendi 3 bolos 45", hoje=date(2026, 11, 20)
     )
 
-    assert resposta == "Anotado: venda de 3 × bolos, R$ 45,00 (negócio) em 20/11."
+    assert resposta == (
+        "Anotado: venda de 3 × bolos, R$ 45,00 (negócio). Errou? Use /desfazer."
+    )
     [lancamento] = lancamentos_de(api)
     assert lancamento["valor"] == "45.00"
     assert lancamento["quantidade"] == 3

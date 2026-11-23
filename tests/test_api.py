@@ -264,3 +264,44 @@ def test_recusa_telegram_id_repetido_com_409(cliente):
     cliente.post("/usuarios", json=dados)
 
     assert cliente.post("/usuarios", json=dados).status_code == 409
+
+
+# --- Desfazer e metas (issue [14]) ---
+
+
+def test_excluir_ultimo_devolve_o_apagado(cliente, usuario):
+    criar(cliente, usuario, despesa(valor="10.00"))
+    segundo = criar(cliente, usuario, despesa(valor="20.00"))
+
+    resposta = cliente.delete(url(usuario) + "/ultimo")
+
+    assert resposta.status_code == 200
+    assert resposta.json() == segundo
+    assert len(cliente.get(url(usuario)).json()) == 1
+
+
+def test_excluir_ultimo_sem_lancamentos_da_404(cliente, usuario):
+    assert cliente.delete(url(usuario) + "/ultimo").status_code == 404
+
+
+def test_define_e_lista_metas_com_o_gasto_do_mes(cliente, usuario):
+    criar(cliente, usuario, despesa(valor="120.00", data="2026-09-10"))
+
+    cliente.put(f"/usuarios/{usuario}/metas/Mercado", json={"valor": "150"})
+    resposta = cliente.get(f"/usuarios/{usuario}/metas", params={"dia": "2026-09-30"})
+
+    assert resposta.json() == [
+        {
+            "categoria": "mercado",
+            "meta": "150.00",
+            "gasto": "120.00",
+            "percentual": "80.00",
+        }
+    ]
+
+
+def test_meta_invalida_da_422(cliente, usuario):
+    rota = f"/usuarios/{usuario}/metas/mercado"
+
+    assert cliente.put(rota, json={"valor": "0"}).status_code == 422
+    assert cliente.put(rota, json={"valor": "abc"}).status_code == 422

@@ -4,6 +4,9 @@ O bot não acessa o banco diretamente: tudo passa pela API, que é o único
 ponto de entrada para os dados (veja "Arquitetura" no README).
 """
 
+from datetime import date
+from decimal import Decimal
+
 import httpx
 
 URL_PADRAO = "http://127.0.0.1:8000"
@@ -44,6 +47,33 @@ class ClienteAPI:
         """Grava um lançamento e devolve como a API respondeu (com o id)."""
         rota = f"/usuarios/{usuario_id}/lancamentos"
         return self._enviar("POST", rota, dados).json()
+
+    def excluir_ultimo_lancamento(self, usuario_id: int) -> dict | None:
+        """Apaga o último lançamento gravado; None se não houver nenhum."""
+        rota = f"/usuarios/{usuario_id}/lancamentos/ultimo"
+        try:
+            resposta = self.http.delete(rota)
+        except httpx.HTTPError as erro:
+            raise ErroAPI(f"a API não respondeu: {erro}") from erro
+        if resposta.status_code == 404:
+            return None
+        _conferir(resposta)
+        return resposta.json()
+
+    def resumo(self, usuario_id: int, nome: str, inicio: date, fim: date):
+        """Um dos resumos de /usuarios/{id}/resumos (negocio, pessoal...)."""
+        params = {"inicio": inicio.isoformat(), "fim": fim.isoformat()}
+        return self._get(f"/usuarios/{usuario_id}/resumos/{nome}", params).json()
+
+    def definir_meta(self, usuario_id: int, categoria: str, valor: Decimal) -> list:
+        """Cria ou troca a meta e devolve todas as metas do mês."""
+        rota = f"/usuarios/{usuario_id}/metas/{categoria}"
+        return self._enviar("PUT", rota, {"valor": str(valor)}).json()
+
+    def listar_metas(self, usuario_id: int, dia: date) -> list[dict]:
+        """Metas com o quanto já foi gasto no mês de `dia`."""
+        rota = f"/usuarios/{usuario_id}/metas"
+        return self._get(rota, {"dia": dia.isoformat()}).json()
 
     # --- detalhes de HTTP ---
 

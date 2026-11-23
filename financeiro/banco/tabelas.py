@@ -69,6 +69,26 @@ class Categoria(Base):
     nome: Mapped[str] = mapped_column(String(50))
 
 
+class Meta(Base):
+    """Limite mensal de gastos de um usuário numa categoria (issue [14]).
+
+    Uma meta por categoria: definir de novo substitui o valor.
+    """
+
+    __tablename__ = "metas"
+    __table_args__ = (
+        UniqueConstraint("categoria_id"),
+        CheckConstraint("valor_centavos > 0", name="valor_positivo"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), index=True)
+    categoria_id: Mapped[int] = mapped_column(ForeignKey("categorias.id"))
+    valor_centavos: Mapped[int]
+
+    categoria: Mapped[Categoria] = relationship()
+
+
 class LancamentoTabela(Base):
     """Linha da tabela de lançamentos.
 

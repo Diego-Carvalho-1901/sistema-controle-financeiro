@@ -7,10 +7,10 @@ Ele recebe e devolve financeiro.modelos.Lancamento, então o resto do app
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from financeiro.banco.tabelas import Categoria, LancamentoTabela, Usuario
+from financeiro.banco.tabelas import Categoria, LancamentoTabela, Meta, Usuario
 from financeiro.modelos import Lancamento
 
 CENTAVOS_POR_REAL = 100
@@ -154,6 +154,38 @@ class RepositorioLancamentos:
         self.sessao.delete(linha)
         self.sessao.flush()
         return True
+
+    def excluir_ultimo(self, usuario_id: int) -> tuple[int, Lancamento] | None:
+        """Apaga o lançamento gravado por último (o de maior id).
+
+        Devolve (id, lançamento) do que foi apagado, ou None se o usuário
+        não tiver nenhum. É o "desfazer" do bot: vale a ordem de gravação,
+        não a data do lançamento.
+        """
+        consulta = select(func.max(LancamentoTabela.id)).where(
+            LancamentoTabela.usuario_id == usuario_id
+        )
+        ultimo_id = self.sessao.scalar(consulta)
+        if ultimo_id is None:
+            return None
+        linha = self.sessao.get(LancamentoTabela, ultimo_id)
+        apagado = _para_lancamento(linha)
+        self.sessao.delete(linha)
+        self.sessao.flush()
+        return ultimo_id, apagado
+
+    def definir_meta(self, usuario_id: int, categoria: str, valor: Decimal) -> None:
+        """Cria ou troca a meta mensal de gastos de uma categoria."""
+        categoria_ = self._obter_ou_criar_categoria(usuario_id, categoria)
+        self.sessao.flush()  # garante o id da categoria, se ela for nova
+        meta = self.sessao.scalars(
+            select(Meta).where(Meta.categoria_id == categoria_.id)
+        ).first()
+        if meta is None:
+            meta = Meta(usuario_id=usuario_id, categoria=categoria_)
+            self.sessao.add(meta)
+        meta.valor_centavos = reais_para_centavos(valor)
+        self.sessao.flush()
 
     def _linha_do_usuario(
         self, usuario_id: int, lancamento_id: int
