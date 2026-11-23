@@ -28,6 +28,8 @@ services:
     environment:
       # Vazia = API aberta (só para uso local). Veja docs/deploy.md.
       FINANCEIRO_API_KEY: ${FINANCEIRO_API_KEY:-}
+      # Assina os links e cookies do painel. Em produção, use um valor secreto.
+      FINANCEIRO_SEGREDO: ${FINANCEIRO_SEGREDO:-segredo-so-para-desenvolvimento}
       FINANCEIRO_DB_URL: postgresql+psycopg://${POSTGRES_USER:-financeiro}:${POSTGRES_PASSWORD:-financeiro}@banco:5432/${POSTGRES_DB:-financeiro}
     ports:
       - "8000:8000"

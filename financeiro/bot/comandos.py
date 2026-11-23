@@ -160,3 +160,14 @@ def responder_corrigir(
         palavra = correcao["palavra_aprendida"]
         texto += f'\nAprendi: "{palavra}" agora é {categoria}.'
     return texto
+
+
+def responder_painel(api: ClienteAPI, telegram_id: int, nome: str) -> str:
+    """/painel: manda o link de login do painel web."""
+    usuario = obter_ou_criar_usuario(api, telegram_id, nome)
+    url = api.criar_link_do_painel(usuario["id"])
+    return (
+        "Seu painel com os gráficos do mês:\n"
+        f"{url}\n\n"
+        "O link vale por 10 minutos e é só seu: não compartilhe."
+    )

@@ -107,6 +107,10 @@ class ClienteAPI:
         """Usuários ligados a uma conta do Telegram."""
         return self._get("/usuarios").json()
 
+    def criar_link_do_painel(self, usuario_id: int) -> str:
+        """Link de login do painel web, válido por 10 minutos (issue [19])."""
+        return self._enviar("POST", f"/usuarios/{usuario_id}/painel/link").json()["url"]
+
     # --- detalhes de HTTP ---
 
     def _get(
