@@ -45,6 +45,15 @@ def criar_usuario(dados: UsuarioEntrada, repo: Repositorio) -> UsuarioSaida:
     return UsuarioSaida(id=usuario_id, **dados.model_dump())
 
 
+@rotas.get("/usuarios", tags=["usuários"])
+def listar_usuarios(repo: Repositorio) -> list[UsuarioSaida]:
+    """Usuários com conta do Telegram (o bot usa no resumo semanal)."""
+    return [
+        UsuarioSaida(id=usuario.id, nome=usuario.nome, telegram_id=usuario.telegram_id)
+        for usuario in repo.listar_usuarios_do_telegram()
+    ]
+
+
 @rotas.get("/usuarios/telegram/{telegram_id}", tags=["usuários"])
 def obter_usuario_do_telegram(telegram_id: int, repo: Repositorio) -> UsuarioSaida:
     """Devolve o usuário ligado a uma conta do Telegram (usado pelo bot)."""

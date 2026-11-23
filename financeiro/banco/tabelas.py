@@ -89,6 +89,24 @@ class Meta(Base):
     categoria: Mapped[Categoria] = relationship()
 
 
+class AlertaMeta(Base):
+    """Registro de que o alerta de meta já foi enviado (issue [16]).
+
+    A restrição UNIQUE garante no máximo um alerta por categoria por mês.
+    """
+
+    __tablename__ = "alertas_meta"
+    __table_args__ = (UniqueConstraint("categoria_id", "ano", "mes"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    categoria_id: Mapped[int] = mapped_column(ForeignKey("categorias.id"))
+    ano: Mapped[int]
+    mes: Mapped[int]
+
+    categoria: Mapped[Categoria] = relationship()
+
+
 class RegraCategoria(Base):
     """Palavra que o usuário ensinou a ligar a uma categoria (issue [15]).
 
