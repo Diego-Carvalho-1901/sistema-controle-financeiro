@@ -145,3 +145,25 @@ class MetaSaida(BaseModel):
     meta: Decimal
     gasto: Decimal
     percentual: Decimal
+
+
+# --- Categorização (issue [15]) ---
+
+
+class SugestaoSaida(BaseModel):
+    """Categoria sugerida para uma descrição (None se não houver)."""
+
+    categoria: str | None
+
+
+class CategoriaEntrada(BaseModel):
+    """Categoria correta, informada pelo usuário."""
+
+    categoria: str = Field(min_length=1, max_length=50)
+
+
+class CorrecaoSaida(BaseModel):
+    """Lançamento corrigido e a palavra que virou regra (se alguma)."""
+
+    lancamento: LancamentoSaida
+    palavra_aprendida: str | None

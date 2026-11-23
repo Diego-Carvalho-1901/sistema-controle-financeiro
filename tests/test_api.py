@@ -305,3 +305,46 @@ def test_meta_invalida_da_422(cliente, usuario):
 
     assert cliente.put(rota, json={"valor": "0"}).status_code == 422
     assert cliente.put(rota, json={"valor": "abc"}).status_code == 422
+
+
+# --- Categorização (issue [15]) ---
+
+
+def sugestao(cliente, usuario_id: int, descricao: str):
+    rota = f"/usuarios/{usuario_id}/categorias/sugestao"
+    return cliente.get(rota, params={"descricao": descricao}).json()["categoria"]
+
+
+def test_sugere_categoria_pelo_dicionario(cliente, usuario):
+    assert sugestao(cliente, usuario, "Posto Shell") == "transporte"
+    assert sugestao(cliente, usuario, "presente da Bia") is None
+
+
+def test_corrigir_o_ultimo_troca_a_categoria_e_aprende(cliente, usuario):
+    criar(cliente, usuario, despesa(descricao="Posto Shell", categoria="posto"))
+    rota = f"/usuarios/{usuario}/lancamentos/ultimo/categoria"
+
+    resposta = cliente.put(rota, json={"categoria": "Entregas"}).json()
+
+    assert resposta["lancamento"]["categoria"] == "entregas"
+    assert resposta["palavra_aprendida"] == "posto"
+    assert cliente.get(url(usuario)).json()[0]["categoria"] == "entregas"
+    # A regra da Ana vence o dicionário padrão ("posto" -> transporte).
+    assert sugestao(cliente, usuario, "posto Ipiranga") == "entregas"
+
+
+def test_regra_aprendida_e_so_do_usuario(cliente, usuario):
+    bia = cliente.post("/usuarios", json={"nome": "Bia"}).json()["id"]
+    criar(cliente, usuario, despesa(descricao="posto"))
+    cliente.put(
+        f"/usuarios/{usuario}/lancamentos/ultimo/categoria",
+        json={"categoria": "entregas"},
+    )
+
+    assert sugestao(cliente, bia, "posto") == "transporte"
+
+
+def test_corrigir_sem_lancamentos_da_404(cliente, usuario):
+    rota = f"/usuarios/{usuario}/lancamentos/ultimo/categoria"
+
+    assert cliente.put(rota, json={"categoria": "x"}).status_code == 404
