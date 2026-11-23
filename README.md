@@ -124,7 +124,7 @@ falam com ela, e ela usa as mesmas regras de negócio que o relatório usa hoje.
 | Qualidade | pytest, ruff (lint e formatação), GitHub Actions | |
 | Dados | Arquivos CSV | SQLAlchemy, Alembic, SQLite (dev) e PostgreSQL (produção) |
 | Interfaces | Linha de comando, API REST com FastAPI | Bot de Telegram, painel web |
-| Infra | | Docker e docker-compose |
+| Infra | Docker e docker-compose (API + PostgreSQL) | Deploy com backups |
 
 ## Como rodar
 
@@ -240,6 +240,27 @@ o nome do campo errado; usuário ou lançamento inexistente devolve 404. Ainda
 não há login: o usuário vem na URL, então por enquanto a API é só para uso
 local.
 
+### Com Docker (API + PostgreSQL)
+
+Com o [Docker](https://docs.docker.com/get-docker/) instalado, um comando
+sobe o PostgreSQL, aplica as migrações e liga a API em
+<http://127.0.0.1:8000/docs>:
+
+```bash
+docker compose up --build        # Ctrl+C para parar
+docker compose down              # remove os containers (os dados ficam)
+docker compose down -v           # remove também o volume com os dados
+```
+
+As senhas do `docker-compose.yml` são só para uso local. Para trocá-las,
+copie o `.env.example` para `.env` e edite (o `.env` não vai para o git).
+Para importar CSVs nesse banco, rode o importador dentro do container:
+
+```bash
+docker compose cp dados/movimentacoes.csv api:/tmp/
+docker compose exec api python importar.py /tmp/movimentacoes.csv --usuario Ana
+```
+
 ## Formatos de CSV
 
 O formato é reconhecido pela primeira linha (cabeçalho). Arquivos em UTF-8.
@@ -278,8 +299,20 @@ ruff check .          # procura erros e más práticas no código
 ruff format --check . # confere a formatação (use "ruff format ." para corrigir)
 ```
 
+Por padrão cada teste usa um SQLite temporário. Para rodar os mesmos
+testes num PostgreSQL (o banco de produção), aponte a variável
+`FINANCEIRO_TEST_DB_URL` para um banco **só de testes**, porque ele é
+apagado a cada teste:
+
+```bash
+docker compose up -d banco
+docker compose exec banco createdb -U financeiro financeiro_teste
+FINANCEIRO_TEST_DB_URL=postgresql+psycopg://financeiro:financeiro@localhost:5432/financeiro_teste pytest
+```
+
 Os mesmos comandos rodam no GitHub Actions a cada push na `main` e em todo
-pull request ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). O selo
+pull request ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)),
+uma vez com SQLite e outra com PostgreSQL, e a imagem Docker é construída. O selo
 no topo deste README mostra se a última execução passou.
 
 ## Roteiro
@@ -299,8 +332,8 @@ completa: [issues do repositório](https://github.com/Diego-Carvalho-1901/sistem
 | [07](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/6) | Banco de dados com SQLAlchemy, SQLite e Alembic | Concluído |
 | [08](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/7) | Importador de CSV que grava no banco | Concluído |
 | [09](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/8) | API FastAPI com CRUD de lançamentos | Concluído |
-| [10](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/9) | Endpoints de resumo com agregações em SQL | Em revisão |
-| [11](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/10) | Testes da API, Dockerfile e docker-compose com PostgreSQL | |
+| [10](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/9) | Endpoints de resumo com agregações em SQL | Concluído |
+| [11](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/10) | Testes da API, Dockerfile e docker-compose com PostgreSQL | Em revisão |
 | [12](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/11) | Bot de Telegram básico com `/start` | |
 | [13](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/12) | Leitor de frases livres | |
 | [14](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/13) | Comandos `/resumo`, `/desfazer` e `/meta` | |

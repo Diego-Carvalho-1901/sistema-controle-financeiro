@@ -7,26 +7,23 @@ import pytest
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
-from financeiro.banco.conexao import criar_engine, criar_fabrica_de_sessoes
+from financeiro.banco.conexao import criar_fabrica_de_sessoes
 from financeiro.banco.repositorio import (
     RepositorioLancamentos,
     centavos_para_reais,
     reais_para_centavos,
 )
-from financeiro.banco.tabelas import Base, Categoria, LancamentoTabela
+from financeiro.banco.tabelas import Categoria, LancamentoTabela
 from financeiro.calculos import resumir_negocio
 from financeiro.modelos import Lancamento
 
 
 @pytest.fixture
-def sessao():
-    """Banco novo e vazio em memória para cada teste."""
-    engine = criar_engine("sqlite://")
-    Base.metadata.create_all(engine)
+def sessao(engine):
+    """Banco novo e vazio para cada teste (veja tests/conftest.py)."""
     Sessao = criar_fabrica_de_sessoes(engine)
     with Sessao() as sessao:
         yield sessao
-    engine.dispose()
 
 
 @pytest.fixture

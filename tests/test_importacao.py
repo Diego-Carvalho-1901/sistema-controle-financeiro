@@ -4,9 +4,8 @@ from decimal import Decimal
 
 import pytest
 
-from financeiro.banco.conexao import criar_engine, criar_fabrica_de_sessoes
+from financeiro.banco.conexao import criar_fabrica_de_sessoes
 from financeiro.banco.repositorio import RepositorioLancamentos
-from financeiro.banco.tabelas import Base
 from financeiro.importacao import importar_csv, importar_linhas
 from financeiro.leitura import ErroLeitura
 
@@ -16,13 +15,10 @@ CAFE = ["02/09/2026", "5.50", "despesa", "lazer", "Café"]
 
 
 @pytest.fixture
-def repo():
-    """Repositório sobre um banco SQLite em memória, novo a cada teste."""
-    engine = criar_engine("sqlite://")
-    Base.metadata.create_all(engine)
+def repo(engine):
+    """Repositório sobre um banco novo a cada teste (veja tests/conftest.py)."""
     with criar_fabrica_de_sessoes(engine)() as sessao:
         yield RepositorioLancamentos(sessao)
-    engine.dispose()
 
 
 @pytest.fixture

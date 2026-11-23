@@ -33,3 +33,50 @@ jobs:
 
       - name: Testes (pytest)
         run: pytest -v
+
+  # Os mesmos testes, agora contra um PostgreSQL de verdade (o banco de
+  # produção). Pega diferenças de comportamento que o SQLite esconde.
+  testes-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: teste
+          POSTGRES_PASSWORD: teste
+          POSTGRES_DB: financeiro_teste
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U teste"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 15
+    env:
+      FINANCEIRO_TEST_DB_URL: postgresql+psycopg://teste:teste@localhost:5432/financeiro_teste
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Instalar dependências
+        run: pip install -r requirements-dev.txt
+
+      - name: Testes (pytest com PostgreSQL)
+        run: pytest -v
+
+  # Confere que a imagem Docker continua sendo construída.
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Construir a imagem
+        run: docker build -t financeiro-api .

@@ -2,20 +2,14 @@
 
 import pytest
 
-from financeiro.banco.conexao import criar_engine
-from financeiro.banco.tabelas import Base
 from importar import main
 from main import CSV_PADRAO
 
 
 @pytest.fixture
-def banco(tmp_path):
-    """URL de um banco SQLite em arquivo, já com as tabelas criadas."""
-    url = f"sqlite:///{tmp_path / 'teste.db'}"
-    engine = criar_engine(url)
-    Base.metadata.create_all(engine)
-    engine.dispose()
-    return url
+def banco(url_banco, engine):
+    """URL de um banco já com as tabelas criadas (veja tests/conftest.py)."""
+    return url_banco
 
 
 def test_importa_e_reimporta_o_csv_de_exemplo(banco, capsys):
