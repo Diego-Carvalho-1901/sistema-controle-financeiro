@@ -70,6 +70,10 @@ class RepositorioLancamentos:
         consulta = select(Usuario).where(Usuario.telegram_id == telegram_id)
         return self.sessao.scalars(consulta).first()
 
+    def nome_do_usuario(self, usuario_id: int) -> str:
+        """Nome cadastrado do usuário (que precisa existir)."""
+        return self.sessao.get(Usuario, usuario_id).nome
+
     def usuario_existe(self, usuario_id: int) -> bool:
         """Diz se há um usuário cadastrado com esse id."""
         return self.sessao.get(Usuario, usuario_id) is not None

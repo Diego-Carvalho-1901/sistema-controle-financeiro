@@ -5,7 +5,9 @@ Ainda não há login: o usuário vem no caminho da URL
 futura; até lá, a API é para uso local.
 """
 
+import logging
 import os
+import secrets
 from datetime import date
 
 from fastapi import (
@@ -17,6 +19,7 @@ from fastapi import (
     Response,
     status,
 )
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import Engine, text
 
 from financeiro.api import categorias, metas, resumos
@@ -33,6 +36,7 @@ from financeiro.api.esquemas import (
     UsuarioSaida,
 )
 from financeiro.banco.conexao import criar_engine, criar_fabrica_de_sessoes
+from financeiro.painel import rotas as painel
 
 ROTA_LANCAMENTOS = "/usuarios/{usuario_id}/lancamentos"
 
@@ -171,12 +175,18 @@ def verificar_saude(request: Request) -> dict:
     return {"status": "ok"}
 
 
-def criar_app(engine: Engine | None = None, chave_api: str | None = None) -> FastAPI:
+def criar_app(
+    engine: Engine | None = None,
+    chave_api: str | None = None,
+    segredo: str | None = None,
+) -> FastAPI:
     """Cria a aplicação ligada ao banco do `engine` (ou ao padrão).
 
     Receber o engine por parâmetro deixa os testes usarem um banco
     temporário sem mexer no financeiro.db. A `chave_api` (ou a variável
-    FINANCEIRO_API_KEY) protege todas as rotas, menos a /saude.
+    FINANCEIRO_API_KEY) protege todas as rotas, menos a /saude e o painel,
+    que usa login próprio. O `segredo` (ou FINANCEIRO_SEGREDO) assina os
+    links e cookies do painel.
     """
     app = FastAPI(
         title="Controle financeiro para autônomos",
@@ -184,9 +194,29 @@ def criar_app(engine: Engine | None = None, chave_api: str | None = None) -> Fas
     )
     app.state.fabrica_de_sessoes = criar_fabrica_de_sessoes(engine or criar_engine())
     app.state.chave_api = chave_api or os.environ.get("FINANCEIRO_API_KEY") or None
+    app.state.segredo = segredo or os.environ.get("FINANCEIRO_SEGREDO") or None
+    if app.state.segredo is None:
+        # Sem segredo fixo, cada reinício da API desloga todo mundo do
+        # painel. Serve para desenvolver; em produção, defina a variável.
+        logging.getLogger(__name__).warning("FINANCEIRO_SEGREDO não definido")
+        app.state.segredo = secrets.token_urlsafe(32)
+    app.state.cookie_seguro = os.environ.get("FINANCEIRO_COOKIE_SEGURO") == "1"
+
     protegidas = [Depends(exigir_chave_api)]
-    for grupo in (rotas, resumos.rotas, metas.rotas, categorias.rotas):
+    for grupo in (
+        rotas,
+        resumos.rotas,
+        metas.rotas,
+        categorias.rotas,
+        painel.rotas_link,
+    ):
         app.include_router(grupo, dependencies=protegidas)
+    app.include_router(painel.rotas_painel)
+    app.mount(
+        "/painel/estatico",
+        StaticFiles(directory=painel.ESTATICO),
+        name="painel-estatico",
+    )
     app.add_api_route("/saude", verificar_saude, methods=["GET"], tags=["saúde"])
     return app
 
