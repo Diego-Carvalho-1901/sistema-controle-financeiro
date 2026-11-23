@@ -4,6 +4,7 @@ Uso:
     alembic upgrade head                       # cria o banco (uma vez)
     python importar.py dados/movimentacoes.csv --usuario Ana
     python importar.py dados/*.csv --usuario Ana
+    python importar.py extrato-nubank.csv --usuario Ana --conta negocio
 
 O banco é o de FINANCEIRO_DB_URL (ou o SQLite local financeiro.db). Cada
 arquivo é gravado na sua própria transação: se um arquivo não puder ser
@@ -32,6 +33,12 @@ def criar_parser() -> argparse.ArgumentParser:
         help="nome do usuário dono dos lançamentos (criado se não existir)",
     )
     parser.add_argument(
+        "--conta",
+        choices=("pessoal", "negocio"),
+        default="pessoal",
+        help="nos extratos de banco: de quem é a conta (padrão: pessoal)",
+    )
+    parser.add_argument(
         "--banco",
         default=None,
         help="URL do banco (padrão: FINANCEIRO_DB_URL ou sqlite:///financeiro.db)",
@@ -51,7 +58,9 @@ def main(argv: list[str] | None = None) -> int:
                 repositorio = RepositorioLancamentos(sessao)
                 usuario_id = repositorio.obter_ou_criar_usuario(argumentos.usuario)
                 try:
-                    relatorio = importar_csv(repositorio, usuario_id, caminho)
+                    relatorio = importar_csv(
+                        repositorio, usuario_id, caminho, argumentos.conta
+                    )
                 except FileNotFoundError:
                     print(f"\n{caminho}: arquivo não encontrado.", file=sys.stderr)
                     codigo = 1
