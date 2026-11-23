@@ -13,13 +13,16 @@ verdade não se perdem, e reimportar o arquivo grava zero linhas.
 """
 
 import csv
+import io
 from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from financeiro import extratos
 from financeiro.banco.repositorio import RepositorioLancamentos, reais_para_centavos
-from financeiro.leitura import ErroLeitura, ler_linhas
+from financeiro.categorizacao import sugerir_categoria
+from financeiro.leitura import ErroLeitura, ResultadoLinha, ler_linhas
 from financeiro.modelos import Lancamento
 
 
@@ -50,20 +53,57 @@ class RelatorioImportacao:
 
 
 def importar_csv(
-    repositorio: RepositorioLancamentos, usuario_id: int, caminho: Path
+    repositorio: RepositorioLancamentos,
+    usuario_id: int,
+    caminho: Path,
+    conta: str = "pessoal",
 ) -> RelatorioImportacao:
     """Abre o CSV em `caminho` e importa as linhas para o usuário.
+
+    Aceita os CSVs do próprio app e os extratos de banco (issue [18]),
+    reconhecidos pelo cabeçalho. Nos extratos, `conta` diz de quem é a
+    conta do banco (negócio ou pessoal) e a categoria é sugerida pelas
+    palavras-chave, usando também as regras que o usuário já ensinou.
 
     Lança FileNotFoundError se o arquivo não existir e ErroLeitura se o
     arquivo inteiro for inválido (vazio ou com cabeçalho desconhecido).
     """
-    with open(caminho, encoding="utf-8", newline="") as arquivo:
-        linhas = csv.reader(arquivo, skipinitialspace=True)
-        return importar_linhas(repositorio, usuario_id, linhas)
+    texto = ler_texto(caminho)
+    if extratos.detectar(texto) is not None:
+        regras = repositorio.regras_de_categoria(usuario_id)
+        resultados = extratos.ler_extrato(
+            texto, conta, lambda descricao: sugerir_categoria(descricao, regras)
+        )
+    else:
+        linhas = csv.reader(io.StringIO(texto), skipinitialspace=True)
+        resultados = ler_linhas(linhas)
+    return importar_resultados(repositorio, usuario_id, resultados)
+
+
+def ler_texto(caminho: Path) -> str:
+    """Lê o arquivo como UTF-8 ou, se falhar, como Windows-1252.
+
+    Alguns bancos ainda exportam em Windows-1252 (o "ANSI" do Excel). O
+    "utf-8-sig" também descarta o BOM que o Excel coloca no começo.
+    """
+    dados = Path(caminho).read_bytes()
+    try:
+        return dados.decode("utf-8-sig")
+    except UnicodeDecodeError:
+        return dados.decode("cp1252")
 
 
 def importar_linhas(
     repositorio: RepositorioLancamentos, usuario_id: int, linhas: Iterable[list[str]]
+) -> RelatorioImportacao:
+    """Importa as linhas de um CSV do app (a primeira é o cabeçalho)."""
+    return importar_resultados(repositorio, usuario_id, ler_linhas(linhas))
+
+
+def importar_resultados(
+    repositorio: RepositorioLancamentos,
+    usuario_id: int,
+    resultados: Iterable[tuple[int, ResultadoLinha]],
 ) -> RelatorioImportacao:
     """Grava no banco as linhas válidas que ainda não estão lá.
 
@@ -72,7 +112,7 @@ def importar_linhas(
     """
     relatorio = RelatorioImportacao()
     validos: list[tuple[int, Lancamento]] = []
-    for numero_linha, resultado in ler_linhas(linhas):
+    for numero_linha, resultado in resultados:
         if isinstance(resultado, ErroLeitura):
             relatorio.erros.append(str(resultado))
         elif not _cabe_em_centavos(resultado):

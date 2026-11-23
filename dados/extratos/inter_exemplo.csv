@@ -1,0 +1,10 @@
+Extrato Conta Corrente
+Conta ;0000000-0
+Período ;01/11/2026 a 30/11/2026
+Saldo ;2.500,00
+
+Data Lançamento;Descrição;Valor;Saldo
+02/11/2026;Pix recebido: "Cliente Ficticio";350,00;2.850,00
+04/11/2026;Compra no debito: "Farinha e Cia";-123,45;2.726,55
+06/11/2026;Pagamento efetuado: "DAS MEI";-75,90;2.650,65
+15/11/2026;Pix enviado: "Grafica Exemplo";-1.250,00;1.400,65
