@@ -40,6 +40,11 @@ class ClienteAPI:
             "POST", "/usuarios", {"nome": nome, "telegram_id": telegram_id}
         ).json()
 
+    def criar_lancamento(self, usuario_id: int, dados: dict) -> dict:
+        """Grava um lançamento e devolve como a API respondeu (com o id)."""
+        rota = f"/usuarios/{usuario_id}/lancamentos"
+        return self._enviar("POST", rota, dados).json()
+
     # --- detalhes de HTTP ---
 
     def _get(
