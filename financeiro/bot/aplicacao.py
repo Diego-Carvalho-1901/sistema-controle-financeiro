@@ -10,7 +10,13 @@ import logging
 import os
 
 from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    ContextTypes,
+    MessageHandler,
+    filters,
+)
 
 from financeiro.bot import conversa
 from financeiro.bot.cliente_api import URL_PADRAO, ClienteAPI, ErroAPI
@@ -50,12 +56,30 @@ async def comando_ajuda(update: Update, _contexto: ContextTypes.DEFAULT_TYPE) ->
     await update.effective_message.reply_text(conversa.responder_ajuda())
 
 
+async def mensagem_de_texto(
+    update: Update, contexto: ContextTypes.DEFAULT_TYPE
+) -> None:
+    """Qualquer texto que não seja comando é lido como um lançamento."""
+    usuario = update.effective_user
+    await _responder(
+        update,
+        conversa.responder_frase,
+        _api(contexto),
+        usuario.id,
+        usuario.first_name,
+        update.effective_message.text,
+    )
+
+
 def criar_aplicacao(token: str, api: ClienteAPI) -> Application:
     """Monta o bot com os comandos registrados (não conecta ainda)."""
     aplicacao = Application.builder().token(token).build()
     aplicacao.bot_data["api"] = api
     aplicacao.add_handler(CommandHandler("start", comando_start))
     aplicacao.add_handler(CommandHandler("ajuda", comando_ajuda))
+    aplicacao.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, mensagem_de_texto)
+    )
     return aplicacao
 
 
