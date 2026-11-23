@@ -127,3 +127,21 @@ class SaldoPessoalSaida(BaseModel):
     """Receitas menos despesas da conta pessoal."""
 
     saldo: Decimal
+
+
+# --- Metas (issue [14]) ---
+
+
+class MetaEntrada(BaseModel):
+    """Valor da meta mensal de gastos de uma categoria."""
+
+    valor: Valor
+
+
+class MetaSaida(BaseModel):
+    """Meta de uma categoria e quanto dela já foi gasto no mês."""
+
+    categoria: str
+    meta: Decimal
+    gasto: Decimal
+    percentual: Decimal

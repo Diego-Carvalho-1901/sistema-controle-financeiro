@@ -10,7 +10,7 @@ from datetime import date
 from fastapi import APIRouter, FastAPI, HTTPException, Response, status
 from sqlalchemy import Engine
 
-from financeiro.api import resumos
+from financeiro.api import metas, resumos
 from financeiro.api.dependencias import Repositorio, exigir_usuario
 from financeiro.api.esquemas import (
     Conta,
@@ -83,6 +83,21 @@ def listar_lancamentos(
     return [LancamentoSaida.de_lancamento(id_, lanc) for id_, lanc in registros]
 
 
+@rotas.delete(ROTA_LANCAMENTOS + "/ultimo", tags=["lançamentos"])
+def excluir_ultimo_lancamento(usuario_id: int, repo: Repositorio) -> LancamentoSaida:
+    """Exclui o lançamento gravado por último e devolve como ele era.
+
+    Fica antes das rotas com /{lancamento_id}: o FastAPI testa as rotas na
+    ordem em que foram registradas.
+    """
+    exigir_usuario(repo, usuario_id)
+    apagado = repo.excluir_ultimo(usuario_id)
+    if apagado is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "nenhum lançamento para excluir")
+    repo.sessao.commit()
+    return LancamentoSaida.de_lancamento(*apagado)
+
+
 @rotas.get(ROTA_LANCAMENTOS + "/{lancamento_id}", tags=["lançamentos"])
 def obter_lancamento(
     usuario_id: int, lancamento_id: int, repo: Repositorio
@@ -137,6 +152,7 @@ def criar_app(engine: Engine | None = None) -> FastAPI:
     app.state.fabrica_de_sessoes = criar_fabrica_de_sessoes(engine or criar_engine())
     app.include_router(rotas)
     app.include_router(resumos.rotas)
+    app.include_router(metas.rotas)
     return app
 
 
