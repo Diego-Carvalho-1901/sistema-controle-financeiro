@@ -79,7 +79,15 @@ def test_aplicacao_registra_os_comandos(api):
         if isinstance(handler, CommandHandler)
         for comando in handler.commands
     }
-    assert {"start", "ajuda", "resumo", "desfazer", "meta", "corrigir"} <= comandos
+    assert {
+        "start",
+        "ajuda",
+        "resumo",
+        "desfazer",
+        "meta",
+        "corrigir",
+        "painel",
+    } <= comandos
     assert any(isinstance(h, MessageHandler) for h in aplicacao.handlers[0])
 
 
