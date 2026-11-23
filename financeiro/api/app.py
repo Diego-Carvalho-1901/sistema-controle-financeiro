@@ -5,22 +5,12 @@ Ainda não há login: o usuário vem no caminho da URL
 futura; até lá, a API é para uso local.
 """
 
-from collections.abc import Iterator
 from datetime import date
-from typing import Annotated
 
-from fastapi import (
-    APIRouter,
-    Depends,
-    FastAPI,
-    HTTPException,
-    Request,
-    Response,
-    status,
-)
+from fastapi import APIRouter, FastAPI, HTTPException, Response, status
 from sqlalchemy import Engine
-from sqlalchemy.orm import Session
 
+from financeiro.api.dependencias import Repositorio, exigir_usuario
 from financeiro.api.esquemas import (
     Conta,
     LancamentoEntrada,
@@ -29,30 +19,8 @@ from financeiro.api.esquemas import (
     UsuarioSaida,
 )
 from financeiro.banco.conexao import criar_engine, criar_fabrica_de_sessoes
-from financeiro.banco.repositorio import RepositorioLancamentos
 
 ROTA_LANCAMENTOS = "/usuarios/{usuario_id}/lancamentos"
-
-
-def obter_sessao(request: Request) -> Iterator[Session]:
-    """Abre uma sessão por requisição e a fecha no fim (dependência)."""
-    with request.app.state.fabrica_de_sessoes() as sessao:
-        yield sessao
-
-
-def obter_repositorio(
-    sessao: Annotated[Session, Depends(obter_sessao)],
-) -> RepositorioLancamentos:
-    """Entrega o repositório pronto para as rotas (dependência)."""
-    return RepositorioLancamentos(sessao)
-
-
-Repositorio = Annotated[RepositorioLancamentos, Depends(obter_repositorio)]
-
-
-def _exigir_usuario(repo: RepositorioLancamentos, usuario_id: int) -> None:
-    if not repo.usuario_existe(usuario_id):
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "usuário não encontrado")
 
 
 def _lancamento_nao_encontrado() -> HTTPException:
@@ -75,7 +43,7 @@ def criar_lancamento(
     usuario_id: int, dados: LancamentoEntrada, repo: Repositorio
 ) -> LancamentoSaida:
     """Cria um lançamento para o usuário."""
-    _exigir_usuario(repo, usuario_id)
+    exigir_usuario(repo, usuario_id)
     lancamento = dados.para_lancamento()
     id_ = repo.adicionar(usuario_id, lancamento)
     repo.sessao.commit()
@@ -92,7 +60,7 @@ def listar_lancamentos(
     categoria: str | None = None,
 ) -> list[LancamentoSaida]:
     """Lista os lançamentos em ordem de data, com filtros opcionais."""
-    _exigir_usuario(repo, usuario_id)
+    exigir_usuario(repo, usuario_id)
     registros = repo.listar_com_ids(usuario_id, inicio, fim, conta, categoria)
     return [LancamentoSaida.de_lancamento(id_, lanc) for id_, lanc in registros]
 
