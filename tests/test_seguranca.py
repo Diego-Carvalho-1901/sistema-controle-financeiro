@@ -23,7 +23,8 @@ def test_sem_a_chave_certa_da_401(protegida, cabecalhos):
 
 
 @pytest.mark.parametrize(
-    "rota", ["/usuarios", "/usuarios/1/lancamentos", "/usuarios/1/resumos/mensal"]
+    "rota",
+    ["/usuarios", "/usuarios/1/lancamentos", "/usuarios/1/resumos/mensal", "/metricas"],
 )
 def test_todas_as_rotas_de_dados_exigem_a_chave(protegida, rota):
     assert protegida.get(rota).status_code == 401

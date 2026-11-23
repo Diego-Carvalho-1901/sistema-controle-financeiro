@@ -22,7 +22,7 @@ from fastapi import (
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import Engine, text
 
-from financeiro.api import categorias, metas, resumos
+from financeiro.api import categorias, metas, metricas, resumos
 from financeiro.api.dependencias import (
     Repositorio,
     exigir_chave_api,
@@ -208,6 +208,7 @@ def criar_app(
         resumos.rotas,
         metas.rotas,
         categorias.rotas,
+        metricas.rotas,
         painel.rotas_link,
     ):
         app.include_router(grupo, dependencies=protegidas)
