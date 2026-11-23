@@ -1,0 +1,35 @@
+# Produção num servidor (VPS) com o PostgreSQL gerenciado fora daqui.
+#
+#   docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# Todas as configurações vêm do .env.prod (veja docs/deploy.md). Nenhum
+# segredo fica neste arquivo.
+
+services:
+  api:
+    build: .
+    restart: unless-stopped
+    environment:
+      FINANCEIRO_DB_URL: ${FINANCEIRO_DB_URL:?defina FINANCEIRO_DB_URL no .env.prod}
+      FINANCEIRO_API_KEY: ${FINANCEIRO_API_KEY:?defina FINANCEIRO_API_KEY no .env.prod}
+    ports:
+      # Só o próprio servidor acessa a API. Para expor na internet, coloque
+      # um proxy com HTTPS na frente (veja docs/deploy.md).
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/saude')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  bot:
+    build: .
+    restart: unless-stopped
+    command: ["python", "-m", "financeiro.bot"]
+    environment:
+      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN:?defina TELEGRAM_TOKEN no .env.prod}
+      FINANCEIRO_API_URL: http://api:8000
+      FINANCEIRO_API_KEY: ${FINANCEIRO_API_KEY}
+    depends_on:
+      api:
+        condition: service_healthy
