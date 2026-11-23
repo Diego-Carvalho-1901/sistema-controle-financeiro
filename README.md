@@ -279,7 +279,20 @@ Sem Docker, com a API já rodando: `TELEGRAM_TOKEN=... python -m financeiro.bot`
 
 No Telegram, mande `/start` para o seu bot: ele cadastra você (ligando a
 conta do Telegram ao usuário pela coluna `telegram_id`) e explica os
-comandos. Os testes (`tests/test_bot.py`) exercitam a lógica do bot contra
+comandos. Depois é só escrever do seu jeito:
+
+| Mensagem | O que vira |
+|---|---|
+| `vendi 3 bolos 45` | venda de 3 bolos, total R$ 45,00 (negócio) |
+| `vendi 3x brigadeiro 2,50 cada` | venda de 3 brigadeiros, total R$ 7,50 |
+| `gastei 30 almoço` | despesa de R$ 30,00 com almoço (pessoal) |
+| `paguei R$ 1.200 aluguel da loja` | despesa de R$ 1.200,00 (negócio) |
+| `recebi 1800 salário ontem` | receita de R$ 1.800,00 com a data de ontem |
+
+O leitor (`financeiro/bot/frases.py`) usa regras simples: o verbo diz o
+tipo, os números viram valor e quantidade, e "negócio", "loja" ou
+"empresa" mudam a conta. Se a frase for ambígua (`gastei 30 e 20`), o bot
+não chuta: explica o que faltou e pede para escrever de novo. Os testes (`tests/test_bot.py`) exercitam a lógica do bot contra
 a API de verdade, mas sem chamar o Telegram.
 
 ## Formatos de CSV
@@ -355,8 +368,8 @@ completa: [issues do repositório](https://github.com/Diego-Carvalho-1901/sistem
 | [09](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/8) | API FastAPI com CRUD de lançamentos | Concluído |
 | [10](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/9) | Endpoints de resumo com agregações em SQL | Concluído |
 | [11](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/10) | Testes da API, Dockerfile e docker-compose com PostgreSQL | Concluído |
-| [12](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/11) | Bot de Telegram básico com `/start` | Em revisão |
-| [13](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/12) | Leitor de frases livres | |
+| [12](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/11) | Bot de Telegram básico com `/start` | Concluído |
+| [13](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/12) | Leitor de frases livres | Em revisão |
 | [14](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/13) | Comandos `/resumo`, `/desfazer` e `/meta` | |
 | [15](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/14) | Categorização automática por palavras-chave | |
 | [16](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/15) | Resumo semanal automático e alerta de meta em 80% | |
