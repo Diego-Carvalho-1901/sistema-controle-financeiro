@@ -2,20 +2,16 @@
 
 import pytest
 
-from financeiro.banco.conexao import criar_engine
-from financeiro.banco.tabelas import Base
+from financeiro.banco.conexao import criar_fabrica_de_sessoes
+from financeiro.banco.repositorio import RepositorioLancamentos
 from importar import main
 from main import CSV_PADRAO
 
 
 @pytest.fixture
-def banco(tmp_path):
-    """URL de um banco SQLite em arquivo, já com as tabelas criadas."""
-    url = f"sqlite:///{tmp_path / 'teste.db'}"
-    engine = criar_engine(url)
-    Base.metadata.create_all(engine)
-    engine.dispose()
-    return url
+def banco(url_banco, engine):
+    """URL de um banco já com as tabelas criadas (veja tests/conftest.py)."""
+    return url_banco
 
 
 def test_importa_e_reimporta_o_csv_de_exemplo(banco, capsys):
@@ -54,3 +50,17 @@ def test_arquivo_inexistente(banco, tmp_path, capsys):
 
     assert main([caminho, "--usuario", "Ana", "--banco", banco]) == 1
     assert "arquivo não encontrado" in capsys.readouterr().err
+
+
+def test_importa_extrato_de_banco_na_conta_escolhida(banco, engine, capsys):
+    extrato = str(CSV_PADRAO.parent / "extratos" / "inter_exemplo.csv")
+
+    assert (
+        main([extrato, "--usuario", "Ana", "--banco", banco, "--conta", "negocio"]) == 0
+    )
+    assert "Linhas importadas: 4" in capsys.readouterr().out
+
+    with criar_fabrica_de_sessoes(engine)() as sessao:
+        repo = RepositorioLancamentos(sessao)
+        lancamentos = repo.listar(repo.obter_ou_criar_usuario("Ana"))
+    assert {lanc.conta for lanc in lancamentos} == {"negocio"}

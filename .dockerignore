@@ -1,0 +1,13 @@
+# Arquivos que não precisam ir para dentro da imagem.
+.git
+.github
+.venv
+venv
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+*.db
+.env
+tests
+dados

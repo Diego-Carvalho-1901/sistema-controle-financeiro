@@ -1,0 +1,56 @@
+# Sobe a API e um PostgreSQL com um comando: docker compose up --build
+#
+# As senhas abaixo são só para desenvolvimento local. Para trocar, crie um
+# arquivo .env (veja .env.example); ele é ignorado pelo git.
+
+services:
+  banco:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-financeiro}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-financeiro}
+      POSTGRES_DB: ${POSTGRES_DB:-financeiro}
+    ports:
+      # Exposto no seu computador para rodar os testes contra o PostgreSQL
+      # (veja "Como testar" no README).
+      - "5432:5432"
+    volumes:
+      # Os dados sobrevivem a "docker compose down" (só somem com -v).
+      - dados-banco:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+
+  api:
+    build: .
+    environment:
+      # Vazia = API aberta (só para uso local). Veja docs/deploy.md.
+      FINANCEIRO_API_KEY: ${FINANCEIRO_API_KEY:-}
+      # Assina os links e cookies do painel. Em produção, use um valor secreto.
+      FINANCEIRO_SEGREDO: ${FINANCEIRO_SEGREDO:-segredo-so-para-desenvolvimento}
+      FINANCEIRO_DB_URL: postgresql+psycopg://${POSTGRES_USER:-financeiro}:${POSTGRES_PASSWORD:-financeiro}@banco:5432/${POSTGRES_DB:-financeiro}
+    ports:
+      - "8000:8000"
+    depends_on:
+      banco:
+        # Espera o PostgreSQL aceitar conexões antes de rodar as migrações.
+        condition: service_healthy
+
+  # O bot só sobe com "docker compose --profile bot up", porque precisa do
+  # TELEGRAM_TOKEN no arquivo .env (veja o README).
+  bot:
+    build: .
+    command: ["python", "-m", "financeiro.bot"]
+    profiles: ["bot"]
+    environment:
+      TELEGRAM_TOKEN: ${TELEGRAM_TOKEN:-}
+      FINANCEIRO_API_URL: http://api:8000
+      FINANCEIRO_API_KEY: ${FINANCEIRO_API_KEY:-}
+      ADMIN_TELEGRAM_ID: ${ADMIN_TELEGRAM_ID:-}
+    depends_on:
+      - api
+
+volumes:
+  dados-banco:

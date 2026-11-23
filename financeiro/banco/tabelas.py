@@ -5,14 +5,17 @@ Valores em dinheiro são guardados como inteiro em centavos (R$ 12,34 vira
 decimal de verdade e guardaria NUMERIC como número de ponto flutuante.
 """
 
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy import (
+    BigInteger,
     CheckConstraint,
+    DateTime,
     ForeignKey,
     MetaData,
     String,
     UniqueConstraint,
+    func,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -48,6 +51,9 @@ class Usuario(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     nome: Mapped[str] = mapped_column(String(100))
+    # Id da conta no Telegram (issue [12]); vazio para quem não usa o bot.
+    # BigInteger porque os ids do Telegram passam do limite de 32 bits.
+    telegram_id: Mapped[int | None] = mapped_column(BigInteger, unique=True)
 
 
 class Categoria(Base):
@@ -63,6 +69,60 @@ class Categoria(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
     nome: Mapped[str] = mapped_column(String(50))
+
+
+class Meta(Base):
+    """Limite mensal de gastos de um usuário numa categoria (issue [14]).
+
+    Uma meta por categoria: definir de novo substitui o valor.
+    """
+
+    __tablename__ = "metas"
+    __table_args__ = (
+        UniqueConstraint("categoria_id"),
+        CheckConstraint("valor_centavos > 0", name="valor_positivo"),
+    )
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"), index=True)
+    categoria_id: Mapped[int] = mapped_column(ForeignKey("categorias.id"))
+    valor_centavos: Mapped[int]
+
+    categoria: Mapped[Categoria] = relationship()
+
+
+class AlertaMeta(Base):
+    """Registro de que o alerta de meta já foi enviado (issue [16]).
+
+    A restrição UNIQUE garante no máximo um alerta por categoria por mês.
+    """
+
+    __tablename__ = "alertas_meta"
+    __table_args__ = (UniqueConstraint("categoria_id", "ano", "mes"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    categoria_id: Mapped[int] = mapped_column(ForeignKey("categorias.id"))
+    ano: Mapped[int]
+    mes: Mapped[int]
+
+    categoria: Mapped[Categoria] = relationship()
+
+
+class RegraCategoria(Base):
+    """Palavra que o usuário ensinou a ligar a uma categoria (issue [15]).
+
+    Ex.: depois que a Ana corrige "posto" para "entregas", toda descrição
+    dela com "posto" é sugerida como "entregas".
+    """
+
+    __tablename__ = "regras_categoria"
+    __table_args__ = (UniqueConstraint("usuario_id", "palavra"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id"))
+    palavra: Mapped[str] = mapped_column(String(50))
+    categoria: Mapped[str] = mapped_column(String(50))
 
 
 class LancamentoTabela(Base):
@@ -89,5 +149,10 @@ class LancamentoTabela(Base):
     descricao: Mapped[str] = mapped_column(String(200))
     produto: Mapped[str | None] = mapped_column(String(100))
     quantidade: Mapped[int | None]
+    # Quando a linha foi gravada (em UTC), diferente de `data`, que é o dia
+    # do gasto. As métricas de uso (issue [20]) contam por esta coluna.
+    criado_em: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), index=True
+    )
 
     categoria: Mapped[Categoria] = relationship()

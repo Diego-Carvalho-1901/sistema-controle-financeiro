@@ -1,0 +1,76 @@
+:root {
+  --fundo: #f6f7f9;
+  --cartao: #ffffff;
+  --texto: #1d2433;
+  --suave: #5b6577;
+  --borda: #e3e6eb;
+  --destaque: #1f7a5c;
+  --negativo: #b3261e;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--fundo);
+  color: var(--texto);
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  background: var(--cartao);
+  border-bottom: 1px solid var(--borda);
+}
+
+header h1 { font-size: 1.2rem; margin: 0; }
+#usuario { display: flex; align-items: center; gap: .75rem; }
+#usuario[hidden] { display: none; }
+#usuario form { margin: 0; }
+
+button, input {
+  font: inherit;
+  padding: .35rem .7rem;
+  border: 1px solid var(--borda);
+  border-radius: 6px;
+  background: var(--cartao);
+}
+
+button { cursor: pointer; }
+
+main { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+
+.mes { display: inline-flex; gap: .5rem; align-items: center; color: var(--suave); }
+
+.cartoes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1.25rem 0;
+}
+
+.cartoes article, figure {
+  background: var(--cartao);
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+  margin: 0;
+}
+
+.cartoes h3 { margin: 0; font-size: .85rem; font-weight: 500; color: var(--suave); }
+.cartoes p { margin: .35rem 0 0; font-size: 1.5rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.cartoes small { color: var(--suave); }
+.negativo { color: var(--negativo); }
+
+.graficos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+}
+
+figcaption { font-weight: 600; margin-bottom: .75rem; }
+.vazio { color: var(--suave); }

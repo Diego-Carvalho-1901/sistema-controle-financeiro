@@ -7,19 +7,14 @@ from fastapi.testclient import TestClient
 
 from financeiro.api.app import criar_app
 from financeiro.api.esquemas import Conta, Tipo
-from financeiro.banco.conexao import criar_engine
-from financeiro.banco.tabelas import Base
 from financeiro.modelos import CONTAS, TIPOS
 
 
 @pytest.fixture
-def cliente(tmp_path):
+def cliente(engine):
     """Cliente HTTP falando com uma API ligada a um banco novo e vazio."""
-    engine = criar_engine(f"sqlite:///{tmp_path / 'teste.db'}")
-    Base.metadata.create_all(engine)
     with TestClient(criar_app(engine)) as cliente:
         yield cliente
-    engine.dispose()
 
 
 @pytest.fixture
@@ -245,3 +240,143 @@ def test_resumo_recusa_periodo_invertido(cliente, usuario):
     resposta = cliente.get(f"/usuarios/{usuario}/resumos/mensal", params=params)
 
     assert resposta.status_code == 422
+
+
+# --- Usuários do Telegram (issue [12]) ---
+
+
+def test_cria_e_busca_usuario_pelo_telegram_id(cliente):
+    telegram_id = 5_000_000_000  # passa de 32 bits, como os ids reais
+    criado = cliente.post("/usuarios", json={"nome": "Ana", "telegram_id": telegram_id})
+
+    resposta = cliente.get(f"/usuarios/telegram/{telegram_id}")
+
+    assert criado.status_code == 201
+    assert resposta.json() == criado.json()
+
+
+def test_telegram_id_nao_cadastrado_da_404(cliente):
+    assert cliente.get("/usuarios/telegram/123").status_code == 404
+
+
+def test_recusa_telegram_id_repetido_com_409(cliente):
+    dados = {"nome": "Ana", "telegram_id": 42}
+    cliente.post("/usuarios", json=dados)
+
+    assert cliente.post("/usuarios", json=dados).status_code == 409
+
+
+# --- Desfazer e metas (issue [14]) ---
+
+
+def test_excluir_ultimo_devolve_o_apagado(cliente, usuario):
+    criar(cliente, usuario, despesa(valor="10.00"))
+    segundo = criar(cliente, usuario, despesa(valor="20.00"))
+
+    resposta = cliente.delete(url(usuario) + "/ultimo")
+
+    assert resposta.status_code == 200
+    assert resposta.json() == segundo
+    assert len(cliente.get(url(usuario)).json()) == 1
+
+
+def test_excluir_ultimo_sem_lancamentos_da_404(cliente, usuario):
+    assert cliente.delete(url(usuario) + "/ultimo").status_code == 404
+
+
+def test_define_e_lista_metas_com_o_gasto_do_mes(cliente, usuario):
+    criar(cliente, usuario, despesa(valor="120.00", data="2026-09-10"))
+
+    cliente.put(f"/usuarios/{usuario}/metas/Mercado", json={"valor": "150"})
+    resposta = cliente.get(f"/usuarios/{usuario}/metas", params={"dia": "2026-09-30"})
+
+    assert resposta.json() == [
+        {
+            "categoria": "mercado",
+            "meta": "150.00",
+            "gasto": "120.00",
+            "percentual": "80.00",
+        }
+    ]
+
+
+def test_meta_invalida_da_422(cliente, usuario):
+    rota = f"/usuarios/{usuario}/metas/mercado"
+
+    assert cliente.put(rota, json={"valor": "0"}).status_code == 422
+    assert cliente.put(rota, json={"valor": "abc"}).status_code == 422
+
+
+# --- Categorização (issue [15]) ---
+
+
+def sugestao(cliente, usuario_id: int, descricao: str):
+    rota = f"/usuarios/{usuario_id}/categorias/sugestao"
+    return cliente.get(rota, params={"descricao": descricao}).json()["categoria"]
+
+
+def test_sugere_categoria_pelo_dicionario(cliente, usuario):
+    assert sugestao(cliente, usuario, "Posto Shell") == "transporte"
+    assert sugestao(cliente, usuario, "presente da Bia") is None
+
+
+def test_corrigir_o_ultimo_troca_a_categoria_e_aprende(cliente, usuario):
+    criar(cliente, usuario, despesa(descricao="Posto Shell", categoria="posto"))
+    rota = f"/usuarios/{usuario}/lancamentos/ultimo/categoria"
+
+    resposta = cliente.put(rota, json={"categoria": "Entregas"}).json()
+
+    assert resposta["lancamento"]["categoria"] == "entregas"
+    assert resposta["palavra_aprendida"] == "posto"
+    assert cliente.get(url(usuario)).json()[0]["categoria"] == "entregas"
+    # A regra da Ana vence o dicionário padrão ("posto" -> transporte).
+    assert sugestao(cliente, usuario, "posto Ipiranga") == "entregas"
+
+
+def test_regra_aprendida_e_so_do_usuario(cliente, usuario):
+    bia = cliente.post("/usuarios", json={"nome": "Bia"}).json()["id"]
+    criar(cliente, usuario, despesa(descricao="posto"))
+    cliente.put(
+        f"/usuarios/{usuario}/lancamentos/ultimo/categoria",
+        json={"categoria": "entregas"},
+    )
+
+    assert sugestao(cliente, bia, "posto") == "transporte"
+
+
+def test_corrigir_sem_lancamentos_da_404(cliente, usuario):
+    rota = f"/usuarios/{usuario}/lancamentos/ultimo/categoria"
+
+    assert cliente.put(rota, json={"categoria": "x"}).status_code == 404
+
+
+# --- Alertas de meta e lista de usuários (issue [16]) ---
+
+
+def alertas(cliente, usuario_id: int, dia: str) -> list[str]:
+    rota = f"/usuarios/{usuario_id}/metas/alertas"
+    resposta = cliente.post(rota, params={"dia": dia})
+    assert resposta.status_code == 200, resposta.text
+    return [meta["categoria"] for meta in resposta.json()]
+
+
+def test_alerta_de_meta_sai_uma_vez_por_mes(cliente, usuario):
+    cliente.put(f"/usuarios/{usuario}/metas/mercado", json={"valor": "100"})
+    criar(cliente, usuario, despesa(valor="50.00", data="2026-09-05"))
+
+    assert alertas(cliente, usuario, "2026-09-05") == []  # 50%
+
+    criar(cliente, usuario, despesa(valor="30.00", data="2026-09-10"))
+    assert alertas(cliente, usuario, "2026-09-10") == ["mercado"]  # 80%
+
+    criar(cliente, usuario, despesa(valor="40.00", data="2026-09-12"))
+    assert alertas(cliente, usuario, "2026-09-12") == []  # já avisou
+
+    criar(cliente, usuario, despesa(valor="90.00", data="2026-10-01"))
+    assert alertas(cliente, usuario, "2026-10-01") == ["mercado"]  # mês novo
+
+
+def test_lista_so_usuarios_com_telegram(cliente, usuario):
+    cliente.post("/usuarios", json={"nome": "Bia", "telegram_id": 99})
+
+    assert [u["nome"] for u in cliente.get("/usuarios").json()] == ["Bia"]

@@ -123,8 +123,8 @@ falam com ela, e ela usa as mesmas regras de negócio que o relatório usa hoje.
 | Linguagem | Python 3.12, só biblioteca padrão (`csv`, `decimal`, `datetime`, `argparse`, `dataclasses`) | |
 | Qualidade | pytest, ruff (lint e formatação), GitHub Actions | |
 | Dados | Arquivos CSV | SQLAlchemy, Alembic, SQLite (dev) e PostgreSQL (produção) |
-| Interfaces | Linha de comando, API REST com FastAPI | Bot de Telegram, painel web |
-| Infra | | Docker e docker-compose |
+| Interfaces | Linha de comando, API REST com FastAPI, bot de Telegram (python-telegram-bot), painel web (HTML + Chart.js) | |
+| Infra | Docker e docker-compose (API + PostgreSQL) | Deploy com backups |
 
 ## Como rodar
 
@@ -216,6 +216,13 @@ uvicorn financeiro.api.app:app --reload
 | `GET` | `/usuarios/{usuario_id}/resumos/categorias` | total por categoria (filtros `tipo`, `conta`, `inicio`, `fim`) |
 | `GET` | `/usuarios/{usuario_id}/resumos/negocio` | faturamento, custos, lucro e margem do negócio |
 | `GET` | `/usuarios/{usuario_id}/resumos/pessoal` | saldo da conta pessoal |
+| `DELETE` | `/usuarios/{usuario_id}/lancamentos/ultimo` | exclui o último lançamento gravado |
+| `PUT` | `/usuarios/{usuario_id}/metas/{categoria}` | define a meta mensal de gastos da categoria |
+| `GET` | `/usuarios/{usuario_id}/metas` | metas com o gasto do mês (`dia` escolhe o mês) |
+| `GET` | `/usuarios/{usuario_id}/categorias/sugestao?descricao=...` | sugere a categoria pelas palavras-chave |
+| `PUT` | `/usuarios/{usuario_id}/lancamentos/ultimo/categoria` | corrige a categoria do último lançamento e aprende a regra |
+| `POST` | `/usuarios/{usuario_id}/metas/alertas` | metas que acabaram de chegar a 80% no mês (cada uma só uma vez) |
+| `GET` | `/usuarios` | usuários ligados ao Telegram |
 
 ```bash
 curl -X POST http://127.0.0.1:8000/usuarios/1/lancamentos \
@@ -236,9 +243,135 @@ curl "http://127.0.0.1:8000/usuarios/1/resumos/categorias?inicio=2026-11-01&fim=
 
 Datas vão no formato ISO (`aaaa-mm-dd`) e valores como texto (`"45.90"`),
 para não passar por `float`. Dados inválidos são recusados com status 422 e
-o nome do campo errado; usuário ou lançamento inexistente devolve 404. Ainda
-não há login: o usuário vem na URL, então por enquanto a API é só para uso
-local.
+o nome do campo errado; usuário ou lançamento inexistente devolve 404. Não
+há login de usuário (o usuário vem na URL): para expor a API, defina
+`FINANCEIRO_API_KEY`, e toda rota passa a exigir o cabeçalho `X-API-Key`
+(veja [docs/deploy.md](docs/deploy.md)).
+
+### Com Docker (API + PostgreSQL)
+
+Com o [Docker](https://docs.docker.com/get-docker/) instalado, um comando
+sobe o PostgreSQL, aplica as migrações e liga a API em
+<http://127.0.0.1:8000/docs>:
+
+```bash
+docker compose up --build        # Ctrl+C para parar
+docker compose down              # remove os containers (os dados ficam)
+docker compose down -v           # remove também o volume com os dados
+```
+
+As senhas do `docker-compose.yml` são só para uso local. Para trocá-las,
+copie o `.env.example` para `.env` e edite (o `.env` não vai para o git).
+Para importar CSVs nesse banco, rode o importador dentro do container:
+
+```bash
+docker compose cp dados/movimentacoes.csv api:/tmp/
+docker compose exec api python importar.py /tmp/movimentacoes.csv --usuario Ana
+```
+
+### Bot de Telegram
+
+O bot conversa com a API (não acessa o banco direto). Para rodar o seu:
+
+1. No Telegram, fale com o [@BotFather](https://t.me/BotFather), use
+   `/newbot` e guarde o token que ele devolve. **O token é um segredo:**
+   nunca coloque no código nem num commit.
+2. Copie o `.env.example` para `.env` e preencha `TELEGRAM_TOKEN`.
+3. Suba tudo, incluindo o bot:
+
+```bash
+docker compose --profile bot up --build
+```
+
+Sem Docker, com a API já rodando: `TELEGRAM_TOKEN=... python -m financeiro.bot`.
+
+No Telegram, mande `/start` para o seu bot: ele cadastra você (ligando a
+conta do Telegram ao usuário pela coluna `telegram_id`) e explica os
+comandos. Depois é só escrever do seu jeito:
+
+| Mensagem | O que vira |
+|---|---|
+| `vendi 3 bolos 45` | venda de 3 bolos, total R$ 45,00 (negócio) |
+| `vendi 3x brigadeiro 2,50 cada` | venda de 3 brigadeiros, total R$ 7,50 |
+| `gastei 30 almoço` | despesa de R$ 30,00 com almoço (pessoal) |
+| `paguei R$ 1.200 aluguel da loja` | despesa de R$ 1.200,00 (negócio) |
+| `recebi 1800 salário ontem` | receita de R$ 1.800,00 com a data de ontem |
+
+O leitor (`financeiro/bot/frases.py`) usa regras simples: o verbo diz o
+tipo, os números viram valor e quantidade, e "negócio", "loja" ou
+"empresa" mudam a conta. Se a frase for ambígua (`gastei 30 e 20`), o bot
+não chuta: explica o que faltou e pede para escrever de novo.
+
+Comandos para consultar e corrigir:
+
+| Comando | O que faz |
+|---|---|
+| `/resumo` ou `/resumo semana` | faturamento, custos e lucro do negócio, saldo pessoal e os maiores gastos do mês (ou da semana) |
+| `/desfazer` | apaga o último lançamento anotado |
+| `/meta mercado 500` | define a meta mensal de gastos de uma categoria |
+| `/meta` | mostra as metas e quanto de cada uma já foi gasto no mês |
+| `/corrigir transporte` | troca a categoria do último lançamento e aprende a regra |
+
+**Categorias automáticas.** Gastos e recebimentos ganham uma categoria
+pelas palavras da descrição ("posto" e "uber" viram `transporte`,
+"almoço" vira `alimentacao`; o dicionário fica em
+`financeiro/categorizacao.py`). Quando a pessoa usa `/corrigir`, a palavra
+principal da descrição passa a apontar para a nova categoria **só para
+ela**, e essa regra vence o dicionário nos próximos lançamentos.
+
+**O bot também fala sozinho:**
+
+- **Resumo semanal**: toda segunda às 9h (horário de Brasília), quem lançou
+  algo na semana anterior recebe o resumo dela. Quem não lançou nada não
+  recebe mensagem.
+- **Alerta de meta**: quando um gasto faz uma categoria chegar a 80% da
+  meta do mês, a confirmação do lançamento vem com um aviso. O aviso sai
+  uma vez por mês por categoria (a tabela `alertas_meta` guarda isso). Os testes (`tests/test_bot.py`) exercitam a lógica do bot contra
+a API de verdade, mas sem chamar o Telegram.
+
+### Métricas de uso
+
+Para saber se o app está sendo usado de verdade:
+
+- `GET /metricas` (com a chave da API) devolve o total de usuários e de
+  lançamentos, a média e o máximo de lançamentos por usuário e os
+  **usuários ativos por semana** (quem gravou algo na semana, contado pela
+  coluna `criado_em`, e não pela data do gasto);
+- `/stats` no bot mostra o mesmo resumo, mas só para o id do Telegram
+  configurado em `ADMIN_TELEGRAM_ID`. Para qualquer outra pessoa, o
+  comando não existe.
+
+As métricas são só contagens: nenhuma traz nome, descrição ou valor de
+alguém. O bot também não guarda o texto das mensagens (só o lançamento que
+saiu delas) e não registra nos logs a URL do Telegram, que contém o token.
+
+### Painel web
+
+Em <http://127.0.0.1:8000/painel/> ficam os cartões do mês (faturamento,
+custos, lucro e saldo pessoal), o gráfico de gastos por categoria e a
+evolução do lucro nos últimos 12 meses.
+
+![Painel com os cartões do mês e os gráficos](docs/painel.png)
+
+**Login sem senha:** mande `/painel` para o bot, e ele responde com um link
+que vale por 10 minutos. Ao abrir o link, o navegador recebe um cookie de
+sessão (assinado com HMAC e `HttpOnly`) que dura 7 dias. Sem o bot, dá
+para gerar o link pelo terminal:
+
+```bash
+docker compose exec api python -m financeiro.painel.link --usuario Ana
+```
+
+O navegador só desenha: lucro, margem e totais vêm prontos da API
+(`/painel/api/...`), calculados com SQL.
+
+### Em produção
+
+O guia [docs/deploy.md](docs/deploy.md) explica como escolher a
+hospedagem, configurar as variáveis de ambiente, subir com o
+`docker-compose.prod.yml`, proteger a API com a `FINANCEIRO_API_KEY` e
+fazer backup diário com o `scripts/backup.sh`. A rota `GET /saude` serve
+para a hospedagem monitorar se a API e o banco estão no ar.
 
 ## Formatos de CSV
 
@@ -263,6 +396,29 @@ data da venda, produto, categoria, quantidade vendida, preco unitario
 2026-09-05, Bolo de cenoura, Bolos, 4, 45.00
 ```
 
+### Extratos de banco
+
+O `importar.py` também lê o extrato CSV exportado pelo app do banco, e
+reconhece o formato pelo cabeçalho:
+
+| Banco | Cabeçalho | Valores |
+|---|---|---|
+| Nubank (conta) | `Data,Valor,Identificador,Descrição` | `-45.90` (ponto decimal) |
+| Inter (conta) | `Data Lançamento;Descrição;Valor;Saldo`, depois das linhas de apresentação | `-1.234,56` (vírgula decimal) |
+
+Valor negativo vira despesa, positivo vira receita, e a categoria é
+sugerida pelas palavras-chave (e pelas regras que o usuário ensinou no
+bot). Como o banco não diz se a conta é do negócio, use `--conta`:
+
+```bash
+python importar.py extrato-nubank.csv --usuario Ana --conta negocio
+```
+
+Os arquivos em `dados/extratos/` são **inventados**: nunca coloque um
+extrato real no repositório. Para um formato novo, basta criar outro
+`FormatoBanco` em `financeiro/extratos.py`, com um arquivo de exemplo
+anonimizado e testes.
+
 ## Como testar
 
 Os testes usam [pytest](https://docs.pytest.org/) e o linter é o
@@ -278,8 +434,20 @@ ruff check .          # procura erros e más práticas no código
 ruff format --check . # confere a formatação (use "ruff format ." para corrigir)
 ```
 
+Por padrão cada teste usa um SQLite temporário. Para rodar os mesmos
+testes num PostgreSQL (o banco de produção), aponte a variável
+`FINANCEIRO_TEST_DB_URL` para um banco **só de testes**, porque ele é
+apagado a cada teste:
+
+```bash
+docker compose up -d banco
+docker compose exec banco createdb -U financeiro financeiro_teste
+FINANCEIRO_TEST_DB_URL=postgresql+psycopg://financeiro:financeiro@localhost:5432/financeiro_teste pytest
+```
+
 Os mesmos comandos rodam no GitHub Actions a cada push na `main` e em todo
-pull request ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)). O selo
+pull request ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)),
+uma vez com SQLite e outra com PostgreSQL, e a imagem Docker é construída. O selo
 no topo deste README mostra se a última execução passou.
 
 ## Roteiro
@@ -299,17 +467,17 @@ completa: [issues do repositório](https://github.com/Diego-Carvalho-1901/sistem
 | [07](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/6) | Banco de dados com SQLAlchemy, SQLite e Alembic | Concluído |
 | [08](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/7) | Importador de CSV que grava no banco | Concluído |
 | [09](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/8) | API FastAPI com CRUD de lançamentos | Concluído |
-| [10](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/9) | Endpoints de resumo com agregações em SQL | Em revisão |
-| [11](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/10) | Testes da API, Dockerfile e docker-compose com PostgreSQL | |
-| [12](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/11) | Bot de Telegram básico com `/start` | |
-| [13](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/12) | Leitor de frases livres | |
-| [14](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/13) | Comandos `/resumo`, `/desfazer` e `/meta` | |
-| [15](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/14) | Categorização automática por palavras-chave | |
-| [16](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/15) | Resumo semanal automático e alerta de meta em 80% | |
-| [17](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/16) | Colocar no ar com PostgreSQL e backups | |
-| [18](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/17) | Importar extrato CSV de bancos reais | |
-| [19](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/18) | Painel web simples com gráficos do mês | |
-| [20](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/19) | Métricas de uso | |
+| [10](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/9) | Endpoints de resumo com agregações em SQL | Concluído |
+| [11](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/10) | Testes da API, Dockerfile e docker-compose com PostgreSQL | Concluído |
+| [12](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/11) | Bot de Telegram básico com `/start` | Concluído |
+| [13](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/12) | Leitor de frases livres | Concluído |
+| [14](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/13) | Comandos `/resumo`, `/desfazer` e `/meta` | Concluído |
+| [15](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/14) | Categorização automática por palavras-chave | Concluído |
+| [16](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/15) | Resumo semanal automático e alerta de meta em 80% | Concluído |
+| [17](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/16) | Colocar no ar com PostgreSQL e backups | Preparado (falta o deploy) |
+| [18](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/17) | Importar extrato CSV de bancos reais | Concluído |
+| [19](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/18) | Painel web simples com gráficos do mês | Concluído |
+| [20](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/19) | Métricas de uso | Em revisão |
 
 ## Projeto relacionado
 

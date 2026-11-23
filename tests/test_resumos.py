@@ -5,16 +5,16 @@ from decimal import Decimal
 
 import pytest
 
-from financeiro.banco.conexao import criar_engine, criar_fabrica_de_sessoes
+from financeiro.banco.conexao import criar_fabrica_de_sessoes
 from financeiro.banco.repositorio import RepositorioLancamentos
 from financeiro.banco.resumos import (
     ResumoMes,
+    lucro_por_mes,
     resumo_negocio,
     resumo_por_categoria,
     resumo_por_mes,
     saldo_pessoal,
 )
-from financeiro.banco.tabelas import Base
 from financeiro.calculos import (
     calcular_saldo_pessoal,
     resumir_negocio,
@@ -57,12 +57,9 @@ DADOS = [
 
 
 @pytest.fixture
-def sessao():
-    engine = criar_engine("sqlite://")
-    Base.metadata.create_all(engine)
+def sessao(engine):
     with criar_fabrica_de_sessoes(engine)() as sessao:
         yield sessao
-    engine.dispose()
 
 
 @pytest.fixture
@@ -152,3 +149,12 @@ def test_sql_e_python_chegam_ao_mesmo_resultado(sessao, usuario):
     assert dict(resumo_por_categoria(sessao, usuario)) == somar_por_categoria(
         lancamentos, "despesa"
     )
+
+
+def test_lucro_por_mes_so_conta_o_negocio(sessao, usuario):
+    meses = lucro_por_mes(sessao, usuario)
+
+    assert [(ano, mes, r.faturamento, r.custos, r.lucro) for ano, mes, r in meses] == [
+        (2026, 9, Decimal(75), Decimal(40), Decimal(35)),
+        (2026, 10, Decimal(200), Decimal("15.25"), Decimal("184.75")),
+    ]

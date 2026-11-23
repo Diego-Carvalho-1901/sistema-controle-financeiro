@@ -169,3 +169,37 @@ def saldo_pessoal(
     consulta = select(func.coalesce(func.sum(sinal), 0)).where(L.conta == "pessoal")
     consulta = _filtrar(consulta, usuario_id, inicio, fim)
     return centavos_para_reais(sessao.scalar(consulta))
+
+
+def lucro_por_mes(
+    sessao: Session,
+    usuario_id: int,
+    inicio: date | None = None,
+    fim: date | None = None,
+) -> list[tuple[int, int, ResumoNegocio]]:
+    """Faturamento e custos do negócio em cada mês (para o gráfico do lucro).
+
+    Mesma ideia de resumo_por_mes, só que filtrando a conta negócio e
+    agrupando entradas (vendas + receitas) contra despesas.
+    """
+    ano = extract("year", L.data).label("ano")
+    mes = extract("month", L.data).label("mes")
+    consulta = select(
+        ano,
+        mes,
+        _soma_se(L.tipo.in_(("venda", "receita"))),
+        _soma_se(L.tipo == "despesa"),
+    ).where(L.conta == "negocio")
+    consulta = _filtrar(consulta, usuario_id, inicio, fim)
+    consulta = consulta.group_by(ano, mes).order_by(ano, mes)
+    return [
+        (
+            int(linha_ano),
+            int(linha_mes),
+            ResumoNegocio(
+                faturamento=centavos_para_reais(faturamento),
+                custos=centavos_para_reais(custos),
+            ),
+        )
+        for linha_ano, linha_mes, faturamento, custos in sessao.execute(consulta)
+    ]

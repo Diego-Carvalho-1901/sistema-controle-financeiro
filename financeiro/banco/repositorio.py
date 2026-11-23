@@ -7,10 +7,17 @@ Ele recebe e devolve financeiro.modelos.Lancamento, então o resto do app
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from financeiro.banco.tabelas import Categoria, LancamentoTabela, Usuario
+from financeiro.banco.tabelas import (
+    AlertaMeta,
+    Categoria,
+    LancamentoTabela,
+    Meta,
+    RegraCategoria,
+    Usuario,
+)
 from financeiro.modelos import Lancamento
 
 CENTAVOS_POR_REAL = 100
@@ -40,9 +47,9 @@ class RepositorioLancamentos:
     def __init__(self, sessao: Session) -> None:
         self.sessao = sessao
 
-    def criar_usuario(self, nome: str) -> int:
+    def criar_usuario(self, nome: str, telegram_id: int | None = None) -> int:
         """Cadastra um usuário e devolve o id dele."""
-        usuario = Usuario(nome=nome)
+        usuario = Usuario(nome=nome, telegram_id=telegram_id)
         self.sessao.add(usuario)
         self.sessao.flush()  # envia o INSERT para o banco preencher o id
         return usuario.id
@@ -57,6 +64,15 @@ class RepositorioLancamentos:
         if usuario_id is None:
             usuario_id = self.criar_usuario(nome)
         return usuario_id
+
+    def buscar_usuario_por_telegram(self, telegram_id: int) -> Usuario | None:
+        """Devolve o usuário ligado a essa conta do Telegram, se houver."""
+        consulta = select(Usuario).where(Usuario.telegram_id == telegram_id)
+        return self.sessao.scalars(consulta).first()
+
+    def nome_do_usuario(self, usuario_id: int) -> str:
+        """Nome cadastrado do usuário (que precisa existir)."""
+        return self.sessao.get(Usuario, usuario_id).nome
 
     def usuario_existe(self, usuario_id: int) -> bool:
         """Diz se há um usuário cadastrado com esse id."""
@@ -149,6 +165,94 @@ class RepositorioLancamentos:
         self.sessao.delete(linha)
         self.sessao.flush()
         return True
+
+    def excluir_ultimo(self, usuario_id: int) -> tuple[int, Lancamento] | None:
+        """Apaga o lançamento gravado por último (o de maior id).
+
+        Devolve (id, lançamento) do que foi apagado, ou None se o usuário
+        não tiver nenhum. É o "desfazer" do bot: vale a ordem de gravação,
+        não a data do lançamento.
+        """
+        ultimo = self.ultimo(usuario_id)
+        if ultimo is not None:
+            self.excluir(usuario_id, ultimo[0])
+        return ultimo
+
+    def definir_meta(self, usuario_id: int, categoria: str, valor: Decimal) -> None:
+        """Cria ou troca a meta mensal de gastos de uma categoria."""
+        categoria_ = self._obter_ou_criar_categoria(usuario_id, categoria)
+        self.sessao.flush()  # garante o id da categoria, se ela for nova
+        meta = self.sessao.scalars(
+            select(Meta).where(Meta.categoria_id == categoria_.id)
+        ).first()
+        if meta is None:
+            meta = Meta(usuario_id=usuario_id, categoria=categoria_)
+            self.sessao.add(meta)
+        meta.valor_centavos = reais_para_centavos(valor)
+        self.sessao.flush()
+
+    def ultimo(self, usuario_id: int) -> tuple[int, Lancamento] | None:
+        """(id, lançamento) do último lançamento gravado, ou None."""
+        consulta = select(func.max(LancamentoTabela.id)).where(
+            LancamentoTabela.usuario_id == usuario_id
+        )
+        ultimo_id = self.sessao.scalar(consulta)
+        if ultimo_id is None:
+            return None
+        return ultimo_id, self.buscar(usuario_id, ultimo_id)
+
+    def categorias_alertadas(self, usuario_id: int, ano: int, mes: int) -> set[str]:
+        """Categorias que já receberam alerta de meta nesse mês."""
+        consulta = (
+            select(Categoria.nome)
+            .join(AlertaMeta, AlertaMeta.categoria_id == Categoria.id)
+            .where(
+                AlertaMeta.usuario_id == usuario_id,
+                AlertaMeta.ano == ano,
+                AlertaMeta.mes == mes,
+            )
+        )
+        return set(self.sessao.scalars(consulta))
+
+    def registrar_alerta(
+        self, usuario_id: int, categoria: str, ano: int, mes: int
+    ) -> None:
+        """Anota que o alerta da categoria já saiu nesse mês."""
+        categoria_ = self._obter_ou_criar_categoria(usuario_id, categoria)
+        self.sessao.add(
+            AlertaMeta(usuario_id=usuario_id, categoria=categoria_, ano=ano, mes=mes)
+        )
+        self.sessao.flush()
+
+    def listar_usuarios_do_telegram(self) -> list[Usuario]:
+        """Usuários ligados a uma conta do Telegram (para o resumo semanal)."""
+        consulta = (
+            select(Usuario).where(Usuario.telegram_id.is_not(None)).order_by(Usuario.id)
+        )
+        return list(self.sessao.scalars(consulta))
+
+    def regras_de_categoria(self, usuario_id: int) -> dict[str, str]:
+        """Regras que o usuário ensinou: {palavra: categoria}."""
+        consulta = select(RegraCategoria.palavra, RegraCategoria.categoria).where(
+            RegraCategoria.usuario_id == usuario_id
+        )
+        return {
+            palavra: categoria for palavra, categoria in self.sessao.execute(consulta)
+        }
+
+    def aprender_regra(self, usuario_id: int, palavra: str, categoria: str) -> None:
+        """Grava (ou troca) a categoria ligada a uma palavra para o usuário."""
+        regra = self.sessao.scalars(
+            select(RegraCategoria).where(
+                RegraCategoria.usuario_id == usuario_id,
+                RegraCategoria.palavra == palavra,
+            )
+        ).first()
+        if regra is None:
+            regra = RegraCategoria(usuario_id=usuario_id, palavra=palavra)
+            self.sessao.add(regra)
+        regra.categoria = categoria
+        self.sessao.flush()
 
     def _linha_do_usuario(
         self, usuario_id: int, lancamento_id: int
