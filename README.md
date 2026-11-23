@@ -212,6 +212,10 @@ uvicorn financeiro.api.app:app --reload
 | `GET` | `/usuarios/{usuario_id}/lancamentos/{id}` | devolve um lançamento |
 | `PUT` | `/usuarios/{usuario_id}/lancamentos/{id}` | substitui os campos de um lançamento |
 | `DELETE` | `/usuarios/{usuario_id}/lancamentos/{id}` | exclui um lançamento |
+| `GET` | `/usuarios/{usuario_id}/resumos/mensal` | receitas, despesas, vendas e saldo de cada mês |
+| `GET` | `/usuarios/{usuario_id}/resumos/categorias` | total por categoria (filtros `tipo`, `conta`, `inicio`, `fim`) |
+| `GET` | `/usuarios/{usuario_id}/resumos/negocio` | faturamento, custos, lucro e margem do negócio |
+| `GET` | `/usuarios/{usuario_id}/resumos/pessoal` | saldo da conta pessoal |
 
 ```bash
 curl -X POST http://127.0.0.1:8000/usuarios/1/lancamentos \
@@ -219,6 +223,15 @@ curl -X POST http://127.0.0.1:8000/usuarios/1/lancamentos \
   -d '{"data": "2026-11-10", "valor": "45.90", "tipo": "venda",
        "categoria": "bolos", "descricao": "Bolo", "conta": "negocio",
        "produto": "Bolo de cenoura", "quantidade": 3}'
+```
+
+Os resumos aceitam `inicio` e `fim` para limitar o período, e as somas são
+feitas pelo próprio banco com `SUM(...)` e `GROUP BY` (veja
+`financeiro/banco/resumos.py`), em vez de trazer todas as linhas para o
+Python:
+
+```bash
+curl "http://127.0.0.1:8000/usuarios/1/resumos/categorias?inicio=2026-11-01&fim=2026-11-30"
 ```
 
 Datas vão no formato ISO (`aaaa-mm-dd`) e valores como texto (`"45.90"`),
@@ -285,8 +298,8 @@ completa: [issues do repositório](https://github.com/Diego-Carvalho-1901/sistem
 | [06](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/5) | Reescrever o README com a visão do produto | Concluído |
 | [07](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/6) | Banco de dados com SQLAlchemy, SQLite e Alembic | Concluído |
 | [08](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/7) | Importador de CSV que grava no banco | Concluído |
-| [09](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/8) | API FastAPI com CRUD de lançamentos | Em revisão |
-| [10](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/9) | Endpoints de resumo com agregações em SQL | |
+| [09](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/8) | API FastAPI com CRUD de lançamentos | Concluído |
+| [10](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/9) | Endpoints de resumo com agregações em SQL | Em revisão |
 | [11](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/10) | Testes da API, Dockerfile e docker-compose com PostgreSQL | |
 | [12](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/11) | Bot de Telegram básico com `/start` | |
 | [13](https://github.com/Diego-Carvalho-1901/sistema-controle-financeiro/issues/12) | Leitor de frases livres | |
