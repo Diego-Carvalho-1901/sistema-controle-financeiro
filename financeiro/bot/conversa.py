@@ -9,7 +9,7 @@ from datetime import date
 from decimal import Decimal
 
 from financeiro.bot.cliente_api import ClienteAPI
-from financeiro.bot.frases import FraseNaoEntendida, Interpretacao, interpretar
+from financeiro.bot.frases import FraseNaoEntendida, interpretar
 
 EXEMPLOS = """Escreva do seu jeito, por exemplo:
 • vendi 3 bolos 45
@@ -25,6 +25,10 @@ Vendas vão para a conta do negócio. Gastos e recebimentos vão para a
 pessoal, a não ser que você diga "negócio", "loja" ou "empresa".
 
 Comandos:
+/resumo - resumo do mês (ou /resumo semana)
+/desfazer - apaga o último lançamento
+/meta mercado 500 - define a meta mensal de gastos de uma categoria
+/meta - mostra as metas e quanto já foi gasto
 /start - cadastra você (ou confirma o cadastro)
 /ajuda - mostra esta mensagem"""
 
@@ -66,21 +70,23 @@ def responder_frase(
     except FraseNaoEntendida as erro:
         return f"Não entendi: {erro}.\n\n{EXEMPLOS}"
     usuario = obter_ou_criar_usuario(api, telegram_id, nome)
-    api.criar_lancamento(usuario["id"], lido.para_json())
-    return f"Anotado: {descrever(lido)}."
+    criado = api.criar_lancamento(usuario["id"], lido.para_json())
+    return f"Anotado: {descrever(criado, hoje)}. Errou? Use /desfazer."
 
 
-def descrever(lido: Interpretacao) -> str:
-    """Resumo do lançamento em uma linha, para a pessoa conferir."""
-    conta = "negócio" if lido.conta == "negocio" else "pessoal"
-    if lido.tipo == "venda":
-        o_que = f"venda de {lido.quantidade} × {lido.produto}"
-    elif lido.tipo == "despesa":
-        o_que = f"gasto com {lido.descricao}"
+def descrever(lancamento: dict, hoje: date | None = None) -> str:
+    """Resumo de um lançamento (no formato JSON da API) em uma linha."""
+    conta = "negócio" if lancamento["conta"] == "negocio" else "pessoal"
+    if lancamento["tipo"] == "venda":
+        o_que = f"venda de {lancamento['quantidade']} × {lancamento['produto']}"
+    elif lancamento["tipo"] == "despesa":
+        o_que = f"gasto com {lancamento['descricao']}"
     else:
-        o_que = f"recebimento de {lido.descricao}"
-    quando = "" if lido.data == date.today() else f" em {lido.data:%d/%m}"
-    return f"{o_que}, {formatar_reais(lido.valor)} ({conta}){quando}"
+        o_que = f"recebimento de {lancamento['descricao']}"
+    data = date.fromisoformat(lancamento["data"])
+    quando = "" if data == (hoje or date.today()) else f" em {data:%d/%m}"
+    valor = formatar_reais(Decimal(lancamento["valor"]))
+    return f"{o_que}, {valor} ({conta}){quando}"
 
 
 def formatar_reais(valor: Decimal) -> str:
